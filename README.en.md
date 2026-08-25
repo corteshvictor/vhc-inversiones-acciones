@@ -135,6 +135,13 @@ before the asterisk.
 The result lands next to the exports, as `universe.xlsx`. Use `-o` to write it
 somewhere else.
 
+The tool reads files you downloaded yourself and **neither inspects the archive
+beforehand nor applies the classifier's resource limits**: no size ceiling, no
+cap on archive entries, none on uncompressed content. It does inherit
+`openpyxl`'s defense against hostile XML, since that library uses `defusedxml`.
+It is meant for genuine InvestingPro exports. Do not point it at an `.xlsx` that
+arrived from someone else — the skill is what inspects before opening.
+
 3. At the end of its output, under `SIGUIENTE TANDA`, are the four boxes to
    fill in: column, comparator, number and unit. Copy them into the filter and
    export again.

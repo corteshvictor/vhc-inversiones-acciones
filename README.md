@@ -248,6 +248,14 @@ nombres llevan espacios antes del asterisco.
 El resultado queda junto a los exports, en `universe.xlsx`. Con `-o` se escribe
 en otro sitio.
 
+La herramienta lee archivos que descargaste tú y **no hace la inspección previa
+del archivo ni aplica los límites de recursos del clasificador**: ni tamaño
+máximo, ni tope de entradas del ZIP, ni de contenido descomprimido. Sí hereda de
+`openpyxl` la defensa contra XML malicioso, porque esa biblioteca usa
+`defusedxml`. Trabaja sobre exports auténticos de InvestingPro, que es para lo
+que está pensada. No la apuntes a un `.xlsx` que llegó de un tercero — para eso
+está el skill, que sí inspecciona antes de abrir.
+
 3. Al final de su salida, en `SIGUIENTE TANDA`, aparecen las cuatro casillas que
    hay que rellenar: columna, comparador, número y unidad. Cópialas al filtro y
    exporta otra vez.
