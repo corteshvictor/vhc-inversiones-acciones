@@ -281,11 +281,17 @@ web como para la API.
 - **Redondea siempre hacia arriba.** Un duplicado sobra y se ve; un hueco no
   deja rastro.
 
-**No hace falta bajar hasta el fondo del mercado.** Sobre el universo completo
-de EE. UU. —8.723 empresas— ninguna por debajo de 292 M de capitalización llegó
-a Deep Dive ni a Watchlist: el método pide ROIC alto sostenido cinco años, y por
-debajo de esa talla casi nunca hay ni datos ni analistas que cubran la empresa.
-Un piso de 100 M deja el universo en unas 3.800 sin perder un solo candidato.
+**No hace falta bajar hasta el fondo del mercado.** En el universo medido el 25
+de agosto de 2026 —8.723 empresas de EE. UU.— ninguna por debajo de 292 M de
+capitalización llegó a Deep Dive ni a Watchlist: el método pide ROIC alto
+sostenido cinco años, y por debajo de esa talla rara vez hay datos completos o
+analistas que cubran la empresa. Con un piso de 100 M el universo baja a unas
+3.800 y aquella corrida no perdió ningún candidato.
+
+Es una observación fechada, no una garantía. El mercado se mueve y una empresa
+pequeña puede calificar en otra corrida, así que conviene rehacer la medición
+antes de fiarse del piso. El razonamiento —que el método pide una trayectoria
+que rara vez existe a esa escala— envejece mejor que el número.
 
 ### Resumen de columnas
 
