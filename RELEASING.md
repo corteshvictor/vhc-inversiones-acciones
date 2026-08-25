@@ -76,6 +76,23 @@ nothing older for it to skip. The key is absent on purpose; a test asserts it
 stays absent, because a stale SHA silently drops every commit before it out of
 the changelog.
 
+## The day the repository becomes public
+
+`SECURITY.md` sends reports to GitHub's private advisory form. That form only
+exists on public repositories, so the link resolves to nothing while this one is
+private — harmless, since nobody outside can read the file either. It stops being
+harmless the moment the repository opens: the file becomes readable and the
+channel it promises has to work.
+
+Enable it in the same sitting:
+
+```bash
+gh api -X PUT repos/corteshvictor/vhc-inversiones-acciones/private-vulnerability-reporting
+```
+
+Branch protection on `main` is worth setting then too. GitHub withholds it from
+private repositories without a paid plan, which is why it is not on yet.
+
 ## The secret to create once
 
 `release.yml` uses `secrets.RELEASE_PLEASE_TOKEN`: a dedicated token with write
