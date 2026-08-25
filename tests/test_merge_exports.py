@@ -7,6 +7,7 @@ and no later reader of the file can tell. These tests pin the rule that catches
 it: every boundary must repeat a company, and the resume value always rounds up.
 """
 
+import os
 import runpy
 import sys
 from unittest import mock
@@ -188,7 +189,8 @@ def test_resolve_paths_expands_a_pattern_and_drops_excel_lock_files(tmp_path):
 
     found = resolve_paths([str(tmp_path / "*.xlsx")])
 
-    assert [p.rsplit("/", 1)[-1] for p in found] == ["one.xlsx", "two.xlsx"]
+    # os.path.basename, not a split on "/": Windows separates with a backslash.
+    assert [os.path.basename(p) for p in found] == ["one.xlsx", "two.xlsx"]
 
 
 def test_resolve_paths_takes_the_list_a_shell_already_expanded(tmp_path):
