@@ -3,6 +3,7 @@
 import re
 
 from vhc_screening import constants
+from vhc_screening import io as screening_io
 
 
 def _flat(text: str) -> str:
@@ -424,3 +425,33 @@ def test_route_b_has_a_re_read_step_before_delivering(project_root):
     assert "volver sobre las cifras de riesgo" in _flat(skill)
     assert "con la respuesta ya escrita y antes de enviarla" in _flat(skill)
     assert "Este paso es el momento de mirar" in _flat(skill)
+
+
+def test_the_reference_states_the_limits_the_reader_actually_applies(project_root):
+    """The agent answers questions about the limits from REFERENCE.md, not from
+    the code, so a stale figure there is wrong even while the program is right.
+    That drifted once: the ceilings were raised and this file kept saying 5 MiB
+    and 2,000 rows in one paragraph while another already said 10 MiB and
+    10,000. Nothing failed, because no test tied the prose to the constants."""
+    reference = (project_root / "references" / "REFERENCE.md").read_text(
+        encoding="utf-8"
+    )
+    mib = 1024 * 1024
+    documented = {
+        f"{screening_io.MAX_XLSX_FILE_BYTES // mib} MiB": "file size",
+        f"{screening_io.MAX_XLSX_ARCHIVE_ENTRIES:,}".replace(",", ".")
+        + " entradas": "archive entries",
+        f"{screening_io.MAX_XLSX_UNCOMPRESSED_BYTES // mib} MiB descomprimidos": "uncompressed bytes",
+        f"{screening_io.MAX_XLSX_MEMBER_BYTES // mib} MiB por entrada": "member bytes",
+        f"{screening_io.MAX_WORKSHEET_ROWS:,}".replace(",", ".") + " filas": "rows",
+        f"{screening_io.MAX_WORKSHEET_COLUMNS} columnas": "columns",
+    }
+
+    for text, limit in documented.items():
+        assert text in reference, (
+            f"REFERENCE.md no declara el límite de {limit}: {text}"
+        )
+
+    # And the superseded figures must be gone, not merely outnumbered.
+    for stale in ("5 MiB,", "2.000 filas"):
+        assert stale not in reference, f"REFERENCE.md conserva el valor viejo: {stale}"
