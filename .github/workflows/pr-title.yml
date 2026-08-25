@@ -1,0 +1,33 @@
+name: pr-title
+
+# Pull requests are rebased onto main, so the title never becomes a commit and
+# release-please never reads it: the changelog is built from the individual
+# commits alone. The title is still checked because it is what a reader sees on
+# the pull request and in the repository's pull request history, and a stray
+# title is the first sign that the commits inside are not conventional either.
+# A self-contained regex keeps this dependency-free.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  lint-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          # type(optional scope)(optional !): subject
+          pattern='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9 ._-]+\))?!?: .+'
+          if echo "$TITLE" | grep -qE "$pattern"; then
+            echo "OK: \"$TITLE\""
+          else
+            echo "::error::PR title must follow Conventional Commits, e.g. 'feat(dashboard): add a language selector'."
+            echo "Got: \"$TITLE\""
+            echo "Allowed types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert."
+            exit 1
+          fi

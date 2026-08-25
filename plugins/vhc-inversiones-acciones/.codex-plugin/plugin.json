@@ -1,0 +1,37 @@
+{
+  "name": "vhc-inversiones-acciones",
+  "version": "1.0.0",
+  "description": "Screening cuantitativo de acciones y Deep Dive de reportes InvestingPro.",
+  "author": {
+    "name": "VHC Inversiones",
+    "url": "https://github.com/corteshvictor"
+  },
+  "homepage": "https://github.com/corteshvictor/vhc-inversiones-acciones",
+  "repository": "https://github.com/corteshvictor/vhc-inversiones-acciones",
+  "keywords": [
+    "acciones",
+    "screening",
+    "investingpro",
+    "inversiones"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "VHC Inversiones — Acciones",
+    "shortDescription": "Screening XLSX y Deep Dive de reportes PDF.",
+    "longDescription": "Analiza exports XLSX del screener de InvestingPro y reportes PDF Pro Research con el método de VHC Inversiones.",
+    "developerName": "VHC Inversiones",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Analiza este export XLSX de InvestingPro.",
+      "Realiza un Deep Dive de este reporte PDF.",
+      "Combina este XLSX y PDF sin reclasificar manualmente."
+    ],
+    "brandColor": "#0A1B2D",
+    "composerIcon": "./skills/vhc-inversiones-acciones/assets/vhc-marca-excel.png",
+    "logo": "./skills/vhc-inversiones-acciones/assets/vhc-marca-excel.png"
+  }
+}

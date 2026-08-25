@@ -1,0 +1,14 @@
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+__pycache__/
+*.pyc
+.DS_Store
+
+# One developer's own Claude Code choices for this checkout, such as which
+# plugins they enabled. Only this file is ignored, not the directory: a
+# repository-wide hook or permission belongs in .claude/settings.json, which is
+# meant to be committed if it is ever needed.
+.claude/settings.local.json

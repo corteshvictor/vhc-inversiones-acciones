@@ -1,0 +1,7 @@
+interface:
+  display_name: "VHC Inversiones — Acciones"
+  short_description: "Screening XLSX y Deep Dive de reportes PDF"
+  icon_small: "./assets/vhc-marca-excel.png"
+  icon_large: "./assets/vhc-banner.webp"
+  brand_color: "#0A1B2D"
+  default_prompt: "Usa $vhc-inversiones-acciones para procesar este export XLSX o analizar este reporte PDF de InvestingPro con el método VHC."

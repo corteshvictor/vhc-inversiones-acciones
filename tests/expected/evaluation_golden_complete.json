@@ -1,0 +1,14 @@
+{
+  "source_file": "screening_market_view_complete.xlsx",
+  "rows": 30,
+  "columns": 30,
+  "missing_core": [],
+  "buckets": {
+    "Deep Dive": 6,
+    "Watchlist": 6,
+    "Neutral": 6,
+    "Descartada": 6,
+    "sector": 6
+  },
+  "sha256": "ee03b246fb741337ccba133fa96da5dff775f58ec58b75244f9e83ab37b281fc"
+}

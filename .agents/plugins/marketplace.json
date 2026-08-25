@@ -1,0 +1,20 @@
+{
+  "name": "vhc-inversiones",
+  "interface": {
+    "displayName": "VHC Inversiones"
+  },
+  "plugins": [
+    {
+      "name": "vhc-inversiones-acciones",
+      "source": {
+        "source": "local",
+        "path": "./plugins/vhc-inversiones-acciones"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

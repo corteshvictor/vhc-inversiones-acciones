@@ -1,0 +1,50 @@
+name: release
+
+# release-please reads the Conventional Commits landed on main, opens a release
+# pull request carrying the CHANGELOG entry and the version bumps, and cuts the
+# tag plus the GitHub Release when that pull request is merged. The release
+# itself therefore goes through review, like every other change here.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        id: release
+        with:
+          # A dedicated token, not the default GITHUB_TOKEN: a pull request
+          # opened with the default token does not trigger CI, so the release
+          # pull request would sit unverified.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  attach-skill:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+
+      # The installable artifact is the ZIP already tracked in the repository,
+      # so the release ships exactly what the tag contains. No rebuild here:
+      # CI has already proven the committed ZIP matches its sources.
+      - name: Attach the installable skill to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: gh release upload "$TAG" vhc-inversiones-acciones.zip --clobber

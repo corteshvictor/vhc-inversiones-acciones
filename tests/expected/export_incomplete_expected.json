@@ -1,0 +1,9 @@
+{
+  "source_file": "screening_market_view_incomplete.xlsx",
+  "rows": 30,
+  "columns": 30,
+  "missing_core": [
+    "Avg Return on Invested Capital (5y)",
+    "Beneish M-Score"
+  ]
+}

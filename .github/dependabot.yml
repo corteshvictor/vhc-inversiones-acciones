@@ -1,0 +1,43 @@
+# Automated dependency updates. The alerts that warn about a published CVE are
+# a separate switch, in Settings → Advanced Security.
+# https://docs.github.com/code-security/dependabot
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    # The prefix becomes the commit subject, which release-please reads. Use
+    # `fix(deps)` so a runtime or security update cuts a patch release and
+    # actually reaches the people who installed the skill. A development bump
+    # takes a hidden type instead: it changes nothing a user installs, and any
+    # visible type would cut a release whose package is byte-identical, because
+    # release-please raises the patch for every type that is not `feat`.
+    commit-message:
+      prefix: "fix(deps)"
+      prefix-development: "chore(deps-dev)"
+    # Runtime bumps stay ungrouped on purpose: each one becomes its own
+    # release, so a security fix is never bundled with unrelated upgrades.
+    # Development bumps are the opposite case — they release nothing — so they
+    # arrive as one pull request a week instead of one per tool.
+    groups:
+      development:
+        dependency-type: development
+        patterns:
+          - "*"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "ci(deps)"
+    # Actions are pinned by SHA, so without this they would freeze forever.
+    # Bundle every bump into ONE grouped pull request instead of one per
+    # action: a routine week becomes a single review. Applies to future runs;
+    # to regroup the ones already open, comment `@dependabot recreate`.
+    groups:
+      github-actions:
+        patterns:
+          - "*"

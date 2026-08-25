@@ -1,0 +1,141 @@
+name: CI
+
+# The gate that used to run only on a maintainer's machine. Everything a pull
+# request must satisfy runs here: Ruff, Pyright, pytest with 100% branch
+# coverage over scripts/, and a proof that the packaged skill still matches its
+# canonical sources.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: gate (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      # run_tests.sh builds its own .venv from requirements-dev.txt and then
+      # runs Ruff, Pyright and pytest. Calling the documented command, rather
+      # than repeating its steps here, is what keeps CI and a local run from
+      # ever disagreeing.
+      - name: Gate
+        run: ./scripts/run_tests.sh
+
+  windows:
+    name: tests on Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      # run_tests.sh assumes a POSIX venv layout, so Windows runs the suite
+      # directly. Only the tests are repeated: Ruff and Pyright read the same
+      # files on every platform, while the reader's path handling, archive
+      # limits and file encodings are what actually differ here. The README
+      # documents a Windows install, so this keeps that promise honest.
+      - run: python -m pip install --requirement requirements-dev.txt
+      - run: python -m pytest
+
+  packaging:
+    name: packaging is reproducible
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version-file: .python-version
+
+      # build_skill.py imports only the standard library, so it needs no
+      # dependencies of its own.
+      - name: Rebuild and prove nothing changed
+        run: |
+          python scripts/build_skill.py
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::build_skill.py changed tracked files. Run it locally and commit the result."
+            git status --porcelain
+            git diff
+            exit 1
+          fi
+
+  commits:
+    name: commit rules
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # AGENTS.md states the rules; this is what makes them hold. A settings
+      # file only binds the tool that reads it, and the pull request title says
+      # nothing about the commits underneath it.
+      - name: Enforce the commit rules
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "$BASE:refs/remotes/origin/$BASE"
+          range="origin/$BASE..$HEAD"
+          failed=0
+
+          # 1. Every commit is a Conventional Commit. Merge commits are
+          #    exempt because GitHub writes them, not the contributor. They are
+          #    not ignored downstream: release-please reads the pull request
+          #    title a merge commit carries and turns it into its own changelog
+          #    entry, which is why this repository rebases instead of merging.
+          conventional='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9 ._-]+\))?!?: .+'
+          while IFS= read -r subject; do
+            [ -z "$subject" ] && continue
+            if ! echo "$subject" | grep -qE "$conventional"; then
+              echo "::error::Not a Conventional Commit: $subject"
+              failed=1
+            fi
+          done < <(git log --no-merges --format='%s' "$range")
+
+          # 2. No co-author trailers at all. Commits here are authored solely by
+          #    the repository owner, so any of them — human or machine — is a
+          #    change of authorship.
+          if git log --format='%B' "$range" | grep -inE '^co-authored-by:'; then
+            echo "::error::A commit carries a Co-authored-by trailer. Commits are authored solely by the repository owner: amend the message and force-push."
+            failed=1
+          fi
+
+          # 3. No generator signature, in a commit or in the pull request body.
+          signature='generated with|co-created with|🤖|:robot:'
+          if git log --format='%B' "$range" | grep -inE "$signature"; then
+            echo "::error::A commit carries an automated-attribution signature."
+            failed=1
+          fi
+          if printf '%s' "$BODY" | grep -inE "$signature|^co-authored-by:"; then
+            echo "::error::The pull request body carries attribution. Remove it."
+            failed=1
+          fi
+
+          exit "$failed"

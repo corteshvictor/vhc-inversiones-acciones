@@ -1,0 +1,71 @@
+{
+  "release-type": "simple",
+  "include-component-in-tag": false,
+  "separate-pull-requests": false,
+  "pull-request-title-pattern": "chore: release ${version}",
+  "group-pull-request-title-pattern": "chore: release ${version}",
+  "pull-request-header": "Release prepared from the Conventional Commits on main.",
+  "pull-request-footer": "Merging this pull request cuts the tag and the GitHub Release. See RELEASING.md.",
+  "changelog-path": "CHANGELOG.md",
+  "changelog-sections": [
+    {
+      "type": "feat",
+      "section": "Features"
+    },
+    {
+      "type": "fix",
+      "section": "Bug Fixes"
+    },
+    {
+      "type": "perf",
+      "section": "Performance"
+    },
+    {
+      "type": "revert",
+      "section": "Reverts"
+    },
+    {
+      "type": "refactor",
+      "section": "Refactors"
+    },
+    {
+      "type": "docs",
+      "section": "Documentation"
+    },
+    {
+      "type": "build",
+      "section": "Build"
+    },
+    {
+      "type": "style",
+      "section": "Styles",
+      "hidden": true
+    },
+    {
+      "type": "test",
+      "section": "Tests",
+      "hidden": true
+    },
+    {
+      "type": "chore",
+      "section": "Chores",
+      "hidden": true
+    },
+    {
+      "type": "ci",
+      "section": "CI",
+      "hidden": true
+    }
+  ],
+  "packages": {
+    ".": {
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "plugins/vhc-inversiones-acciones/.codex-plugin/plugin.json",
+          "jsonpath": "$.version"
+        }
+      ]
+    }
+  }
+}
