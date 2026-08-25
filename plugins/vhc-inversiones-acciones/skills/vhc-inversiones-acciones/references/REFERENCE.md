@@ -34,7 +34,11 @@ Cada quien organiza su screener como prefiere, así que el screening localiza lo
 
 **No hay filtro de sector.** Financieras y utilities entran al export como todas las demás; el screening las aparta después, en la categoría "Omitida por método" (detalle más abajo). Las plataformas de pago — Visa, Mastercard, PayPal y compañía — viven bajo la etiqueta de sector financiero sin ser bancos, y por eso sí se analizan con los umbrales normales.
 
-El export corta en **1.000 filas** como máximo, tomadas de mayor a menor capitalización de mercado. Ese tope y ese orden los impone InvestingPro al exportar; el clasificador no los controla ni depende de ellos.
+Cada export corta en **1.000 filas** como máximo, tomadas de mayor a menor capitalización de mercado. Ese tope y ese orden los impone InvestingPro al exportar; el clasificador no los controla ni depende de ellos.
+
+Para analizar un universo más ancho, se descarga por tramos bajando el filtro de capitalización y se unen los archivos en una sola hoja, bajo una única fila de encabezados. El clasificador acepta hasta **10.000 filas** y **10 MiB** por archivo, de sobra para el universo completo de EE. UU.; pasado cualquiera de los dos, se detiene y lo dice.
+
+El filtro debe redondearse **hacia arriba** en cada tramo. Así la última empresa de una tanda reaparece como primera de la siguiente, y ese duplicado —que se elimina al fusionar— demuestra que entre las dos no quedó ningún hueco. Redondear hacia abajo pierde empresas sin dejar rastro. La herramienta `tools/merge_exports.py` une las tandas, quita los duplicados y avisa del tramo perdido cuando alguna frontera llega sin solape; el procedimiento completo está en el README.
 
 ## El export, paso a paso
 

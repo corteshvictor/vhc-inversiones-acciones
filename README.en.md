@@ -101,7 +101,68 @@ Export rules:
 - Column order does not matter — the script resolves columns by header, never by position.
 - Do not rename or translate the headers after exporting.
 - Export with **Export → Excel** and attach the file in the same message where you ask for the screening.
-- InvestingPro caps the export at 1,000 rows, ordered by market capitalization.
+- InvestingPro caps each export at 1,000 rows, ordered by market capitalization. To analyze more companies, combine several exports into one sheet under a single header row: the classifier accepts up to 10,000 rows and 10 MiB.
+
+### Analyzing more than 1,000 companies
+
+Each export stops at 1,000 rows. A wider universe is downloaded in slices and
+the files are joined into a single sheet. The repository ships the tool that
+joins them and, more to the point, **checks that nobody was lost on the way**.
+
+**The principle, and it is the only thing to understand:** each slice starts
+where the previous one ended. When the filter is rounded **up**, the last
+company of one slice reappears as the first of the next. That duplicate is
+harmless — merging drops it — and it is the proof that no gap opened between
+them. Rounded down, the companies in that range land in no slice at all, and
+**nothing in the file betrays their absence**.
+
+**Step by step.** One number moves, and the tool works it out for you:
+
+1. Export **with no filters**. The 1,000 largest come out.
+2. Join what you have:
+
+```bash
+cd /path/to/vhc-inversiones-acciones
+python tools/merge_exports.py ~/Downloads/Untitled*.xlsx
+```
+
+Two details that save a fight with the shell: the command runs from the
+**repository root**, because the tool lives in `tools/`; and it takes either the
+file list the shell expands or a quoted pattern —`"~/Downloads/Untitled
+Screener*.xlsx"`— which is what a wildcard needs when the names carry spaces
+before the asterisk.
+
+The result lands next to the exports, as `universe.xlsx`. Use `-o` to write it
+somewhere else.
+
+3. At the end of its output, under `SIGUIENTE TANDA`, are the four boxes to
+   fill in: column, comparator, number and unit. Copy them into the filter and
+   export again.
+4. Back to step 2. When the number it proposes falls below the size you care
+   about — 100M, say — you are done: stop downloading. No floor filter needed.
+
+When a slice returns fewer than 1,000 rows the tool says so, and the universe is
+complete.
+
+The tool orders the slices by capitalization, checks every boundary, drops the
+duplicates and writes one sheet under a single header row. It ends with
+`Sin huecos` when everything lines up. When an overlap is missing it names the
+range that was lost and gives the exact filter that recovers it, both for the
+web and for the API.
+
+**Three warnings that save a wasted download:**
+
+- **Download every slice on the same day.** Capitalizations move with price, and
+  mixing dates breaks the boundaries.
+- **Use a clean directory.** The pattern picks up everything that matches, so an
+  old export slips in and spoils the result.
+- **Always round up.** A duplicate is visible and harmless; a gap leaves no trace.
+
+**There is no need to reach the bottom of the market.** Across the whole US
+universe — 8,723 companies — none below 292M in capitalization reached Deep Dive
+or Watchlist: the method asks for high ROIC sustained over five years, and below
+that size there is rarely either the data or the analyst coverage. A 100M floor
+leaves about 3,800 companies without losing a single candidate.
 
 Columns:
 
@@ -112,6 +173,37 @@ Columns:
 | Optional | 5 | The analysis runs; you lose context, ordering or links |
 
 The exact column names are listed in [`references/REFERENCE.md`](references/REFERENCE.md).
+
+## Where the method comes from
+
+None of the six models the classifier uses was invented here: every one comes
+from published, citable work. What version 1.0 contributes is the combination
+and the specific thresholds, which can be argued against their source instead of
+taken on faith.
+
+| Model | Origin | What it measures here |
+|---|---|---|
+| **Greenblatt** | Joel Greenblatt, *The Little Book That Beats the Market*, Wiley, 2005 | Return on invested capital: current `ROIC` and its five-year average |
+| **MSCI** | The MSCI quality index methodology | High `ROE` alongside healthy leverage |
+| **AQR** | Asness, Frazzini and Pedersen, *Quality Minus Junk*, Review of Accounting Studies 24(1), 2019, pp. 34–112 — [doi](https://doi.org/10.1007/s11142-018-9470-2) | Four pillars: profitable, growing, safe, and returning capital |
+| **Piotroski** | Joseph Piotroski, *Value Investing: The Use of Historical Financial Statement Information to Separate Winners from Losers*, Journal of Accounting Research 38, 2000, pp. 1–41 — [doi](https://doi.org/10.2307/2672906) | The nine-criterion F-Score on accounting soundness |
+| **Altman** | Edward Altman, *Financial Ratios, Discriminant Analysis and the Prediction of Corporate Bankruptcy*, The Journal of Finance 23(4), 1968, pp. 589–609 — [doi](https://doi.org/10.1111/j.1540-6261.1968.tb00843.x) | The Z-Score, distance to bankruptcy |
+| **Beneish** | Messod Beneish, *The Detection of Earnings Manipulation*, Financial Analysts Journal 55(5), 1999, pp. 24–36 — [doi](https://doi.org/10.2469/faj.v55.n5.2296) | The M-Score, patterns consistent with earnings manipulation |
+
+Every link is a **DOI**: a permanent identifier that always resolves to the
+publisher's page, never to an aggregator or a loose copy that moves or
+disappears. Greenblatt's work is a book and carries no DOI; MSCI publishes its
+index methodology on its own site.
+
+The first three form the **quality** gate — one lens each, and all three must
+pass for a company to be EXCELLENT. The last three form **financial health**.
+**Price** uses no academic model at all: it counts signals for and against from
+`EV / EBIT`, the free cash flow yield, the discount to fair value and the
+analyst label.
+
+The exact thresholds are in the tables below, and they are the ones of method
+version 1.0. Changing them changes the classification, so `SCREENING_VERSION`
+moves with them.
 
 ## Every indicator
 
