@@ -1,17 +1,17 @@
 [tool.pytest.ini_options]
-pythonpath = [".", "scripts"]
+pythonpath = [".", "scripts", "tools"]
 testpaths = ["tests"]
-addopts = "-ra --strict-markers --cov=scripts --cov-branch --cov-report=term-missing"
+addopts = "-ra --strict-markers --cov=scripts --cov=tools --cov-branch --cov-report=term-missing"
 
 [tool.pyright]
-extraPaths = ["scripts"]
+extraPaths = ["scripts", "tools"]
 pythonVersion = "3.12"
 venvPath = "."
 venv = ".venv"
 
 [tool.coverage.run]
 branch = true
-source = ["scripts"]
+source = ["scripts", "tools"]
 
 [tool.coverage.report]
 fail_under = 100
