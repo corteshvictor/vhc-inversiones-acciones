@@ -139,6 +139,10 @@ text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
 .chip--neutral{color:var(--neutral);border-color:var(--neutral-border)}
 .chip--risk{color:var(--risk);background:var(--risk-tint);border-color:var(--risk-border)}
 .chip--calm{color:var(--expensive);background:var(--expensive-tint);border-color:var(--expensive-border)}
+/* Las demás insignias son de una palabra y no deben partirse. La de alertas
+   encadena hasta tres — «Altman zona de riesgo · M-Score · Posible trampa de
+   valor» — y sin envolver se sale de su columna. */
+.chip--wrap{white-space:normal;line-height:1.5}
 .r__up{font-size:12px;font-weight:600;text-align:right}
 .nx{font-weight:inherit}
 .r__up--pos{color:var(--quality)}.r__up--neg{color:var(--risk)}.r__up--flat{color:var(--muted)}
@@ -735,7 +739,7 @@ def _alert_cell(note: str) -> str:
         else "chip--neutral"
     )
     return (
-        f'<div><span class="chip {style}"{_en(_alert_en(note))}>'
+        f'<div><span class="chip {style} chip--wrap"{_en(_alert_en(note))}>'
         f"{escape_html(note)}</span></div>"
     )
 
