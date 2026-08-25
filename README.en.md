@@ -165,11 +165,16 @@ web and for the API.
   old export slips in and spoils the result.
 - **Always round up.** A duplicate is visible and harmless; a gap leaves no trace.
 
-**There is no need to reach the bottom of the market.** Across the whole US
-universe — 8,723 companies — none below 292M in capitalization reached Deep Dive
-or Watchlist: the method asks for high ROIC sustained over five years, and below
-that size there is rarely either the data or the analyst coverage. A 100M floor
-leaves about 3,800 companies without losing a single candidate.
+**There is no need to reach the bottom of the market.** In the universe measured
+on 25 August 2026 — 8,723 US companies — none below 292M in capitalization
+reached Deep Dive or Watchlist: the method asks for high ROIC sustained over five
+years, and below that size complete data and analyst coverage are both rare. A
+100M floor leaves about 3,800 companies, and that run lost no candidate.
+
+This is a dated observation, not a guarantee. Markets move and a small company
+may qualify in another run, so the measurement is worth repeating before trusting
+the floor. The reasoning — that the method asks for a record that rarely exists at
+that scale — ages better than the number.
 
 Columns:
 
