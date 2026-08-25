@@ -25,12 +25,17 @@ Row = Sequence[Any]
 HeaderMap = dict[str, int]
 Accessor = Callable[[Row, str], Any]
 
-# Defensive limits: a normal InvestingPro export holds up to 1,000 rows.
-MAX_XLSX_FILE_BYTES = 5 * 1024 * 1024  # 5 MiB for the attached XLSX file.
+# Defensive limits. InvestingPro caps a single export at 1,000 rows, but a
+# universe wider than that is assembled by combining several exports into one
+# sheet, so the limits size for that file, not for one export. A single export
+# stores its sheet uncompressed, which is why 1,000 rows already weigh 1.4 MiB;
+# anything larger has been through Excel or a script, and those deflate it
+# about fivefold, so 10,000 rows land near 3 MiB.
+MAX_XLSX_FILE_BYTES = 10 * 1024 * 1024  # 10 MiB: 10,000 rows weigh 3, measured.
 MAX_XLSX_ARCHIVE_ENTRIES = 2_048  # 2,048 internal files at most.
 MAX_XLSX_UNCOMPRESSED_BYTES = 200 * 1024 * 1024  # 200 MiB in total.
 MAX_XLSX_MEMBER_BYTES = 100 * 1024 * 1024  # 100 MiB per internal file.
-MAX_WORKSHEET_ROWS = 2_000  # 2,000 rows: twice the expected export.
+MAX_WORKSHEET_ROWS = 10_000  # 10,000 rows: the whole US universe, plus room.
 MAX_WORKSHEET_COLUMNS = 256  # 256 columns per sheet.
 SECTOR_LIST_MAX_AGE_DAYS = 180  # Six months between CSV reviews.
 
