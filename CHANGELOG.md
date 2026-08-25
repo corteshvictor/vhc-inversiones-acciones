@@ -20,6 +20,25 @@ threshold, a lens, a gate or the score itself changes.
 
 <!-- release-please will insert released versions below this line. -->
 
+## [1.1.0](https://github.com/corteshvictor/vhc-inversiones-acciones/compare/v1.0.0...v1.1.0) (2026-08-25)
+
+
+### Features
+
+* **dashboard:** open the Neutral rows and cite where the method comes from ([6a7246d](https://github.com/corteshvictor/vhc-inversiones-acciones/commit/6a7246d083ae0198ee718d580a9f18df0ce09797))
+* **io:** accept a universe wider than a single export ([49c7715](https://github.com/corteshvictor/vhc-inversiones-acciones/commit/49c7715168de6efc87398e8bed716ee343ba2416))
+* **tools:** merge several exports and verify their continuity ([2a905e4](https://github.com/corteshvictor/vhc-inversiones-acciones/commit/2a905e45c7b4b1d99a2445d9b4769166d573b0a0))
+
+
+### Bug Fixes
+
+* **dashboard:** keep long alerts inside their column ([7014cf5](https://github.com/corteshvictor/vhc-inversiones-acciones/commit/7014cf5b5503b0af49eeca3896b64c4d016b9fc3))
+
+
+### Documentation
+
+* explain how to cover a universe wider than one export ([5b649f7](https://github.com/corteshvictor/vhc-inversiones-acciones/commit/5b649f7b972a267a39ef3bf3a39080f28daafd08))
+
 ## 1.0.0 (2026-08-25)
 
 First public release.
