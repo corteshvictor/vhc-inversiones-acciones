@@ -12,8 +12,15 @@ esa diferencia es precisamente lo que el registro sirve para mostrar.
 ## Alcance de certificación de la próxima versión
 
 Sin esta lista no hay respuesta objetiva a "¿está completa la matriz?". Certificar las nueve
-superficies con un solo modelo cada una son 424 ejecuciones, y no declarar cuáles se eligieron
-convierte el bloqueo de publicación en una opinión.
+superficies con un solo modelo cada una son **415 ejecuciones**, y no declarar cuáles se
+eligieron convierte el bloqueo de publicación en una opinión.
+
+El número sale de la columna `Ejec.` de la matriz, no de contar casos: las 21 filas suman 48
+ejecuciones, pero ninguna superficie las corre todas. `C09a` y `C09b` son de la pestaña Code de
+Claude y en las demás no aplican, así que una superficie estándar corre 46. Claude Code corre 47:
+no le aplica `C08` pero sí esas dos. De ahí `8 × 46 + 47`. Rehacer la cuenta cada vez que cambie
+una repetición o la aplicabilidad de un caso, porque un total obsoleto describe mal el trabajo
+que falta.
 
 Cada línea es una configuración exacta, con el identificador que define
 [`README.md`](README.md): producto, superficie, distribución, modelo y esfuerzo. Cambiar cualquiera
