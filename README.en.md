@@ -98,7 +98,7 @@ Do **not** filter by sector. The screening sets financials and utilities aside o
 Export rules:
 
 - Use the InvestingPro interface **in English**; the canonical column names are the ones it produces.
-- Column order does not matter — the script resolves columns by header, never by position.
+- Column order does not matter — the script resolves columns by header, never by position. Row order does, if you are merging several exports: keep them sorted by `Market Cap (Adjusted)` from largest down, which is how the screener writes them. The merge tool stops when it finds otherwise.
 - Do not rename or translate the headers after exporting.
 - Export with **Export → Excel** and attach the file in the same message where you ask for the screening.
 - InvestingPro caps each export at 1,000 rows, ordered by market capitalization. To analyze more companies, combine several exports into one sheet under a single header row: the classifier accepts up to 10,000 rows and 10 MiB.

@@ -33,7 +33,21 @@ from openpyxl import Workbook
 TICKER = "Ticker"
 NAME = "Name"
 MARKET_CAP = "Market Cap (Adjusted)"
+FULL_TICKER = "Full Ticker"
+
+# A genuine InvestingPro export repeats this one column, twice, spelling the
+# exchange differently in each — NASDAQGS:NVDA against NasdaqGS:NVDA. Refusing
+# duplicates outright would refuse every real file, so this single name is
+# tolerated and the last occurrence wins, which is what the classifier reads.
+# No other repetition is safe: a second Ticker or Market Cap column would take
+# over the first and nothing downstream could tell.
+TOLERATED_DUPLICATE = FULL_TICKER
 MILLION = 1_000_000
+
+# The ceiling the classifier applies, mirrored here so a merge that would be
+# rejected on upload is reported while the files are still on the desk.
+# tests/test_merge_exports.py keeps this equal to io.MAX_WORKSHEET_ROWS.
+CLASSIFIER_ROW_LIMIT = 10_000
 
 
 def _text(value: object) -> str:
@@ -56,8 +70,10 @@ class Batch:
 
     path: str
     header: list[str]
+    columns: dict[str, int]
     rows: list[list[object]]
     tickers: list[str]
+    identities: list[str]
     caps: list[float]
 
     @property
@@ -111,41 +127,184 @@ def _find_header(rows: list[list[object]], path: str) -> int:
     raise SystemExit(f"ERROR: {os.path.basename(path)} no trae fila de encabezados")
 
 
+def _identity(row: list[object], columns: dict[str, int]) -> str:
+    """What makes a company itself, which is not its ticker.
+
+    Two companies really do share one: in an August 2026 export, `FLYX` is both
+    Flyexclusive Inc on NYSE and FlyE Group Inc on NYSEAM. Deduplicating by
+    ticker drops the second without a word, and the merged sheet gives no sign
+    that a company went missing.
+
+    `Full Ticker` carries the exchange and settles it. It is optional for the
+    method, so when it is absent the pair (ticker, name) stands in — enough to
+    tell two companies apart while still recognising the same one across two
+    exports.
+    """
+    full = _text(_cell(row, columns.get(FULL_TICKER))).casefold()
+    if full:
+        return full
+    ticker = _text(_cell(row, columns.get(TICKER))).casefold()
+    name = _text(_cell(row, columns.get(NAME))).casefold()
+    return f"{ticker}\x00{name}"
+
+
 def _cell(row: list[object], index: int | None) -> object:
     if index is None or index >= len(row):
         return None
     return row[index]
 
 
+def _require_boundary_capitalizations(
+    data: list[list[object]], name_at: int, cap_at: int, path: str
+) -> None:
+    """The first and last companies decide the order and the next filter.
+
+    A gap in the middle is harmless: capitalization is optional for the method,
+    and those rows merge like any other. The edges are not. The batch is placed
+    among the others by its first row and the next filter is computed from its
+    last, so a missing value there pairs one company's ticker with another
+    company's number — and the tool would announce a boundary that never existed.
+    """
+    if not data:
+        raise SystemExit(f"ERROR: {os.path.basename(path)} no trae ninguna empresa")
+    for row, edge in ((data[0], "primera"), (data[-1], "última")):
+        if _number(_cell(row, cap_at)) is not None:
+            continue
+        company = _text(_cell(row, name_at))
+        raise SystemExit(
+            f"ERROR: la {edge} empresa de {os.path.basename(path)} — {company} — "
+            f"no trae '{MARKET_CAP}'. Ese valor sitúa la tanda entre las demás y "
+            "calcula el filtro siguiente, así que sin él la frontera que se "
+            "anuncie sería de otra empresa."
+        )
+
+
+def _require_descending_order(
+    data: list[list[object]], ticker_at: int, cap_at: int, path: str
+) -> None:
+    """The export must run from the largest capitalization down.
+
+    Everything the tool reports about a batch reads its edges: the first row
+    places it among the others, the last one yields the next filter. Both are
+    read as tickers while the figures come from the whole column, so a sheet
+    sorted any other way pairs one company's name with another's number and
+    announces a boundary that never existed.
+
+    Refused rather than re-sorted. Sorting would hide the real cause — a screener
+    exported without `Market Cap (Adjusted)` descending — and the next download
+    would repeat it.
+    """
+    previous_value: float | None = None
+    previous_ticker = ""
+    for index, row in enumerate(data, 1):
+        value = _number(_cell(row, cap_at))
+        if value is None:  # An interior gap, already reported elsewhere.
+            continue
+        if previous_value is not None and value > previous_value:
+            ticker = _text(_cell(row, ticker_at))
+            raise SystemExit(
+                f"ERROR: {os.path.basename(path)} no está ordenado de mayor a "
+                f"menor capitalización: {ticker} ({value / MILLION:,.2f} M) en "
+                f"la fila {index} supera a {previous_ticker} "
+                f"({previous_value / MILLION:,.2f} M), que va antes. Vuelve a "
+                f"exportar ordenando por '{MARKET_CAP}' de forma descendente."
+            )
+        previous_value, previous_ticker = value, _text(_cell(row, ticker_at))
+
+
+def _check_repeated_headers(header_row: list[object], path: str) -> None:
+    """Only `Full Ticker` may appear twice; anything else is a silent swap."""
+    seen: dict[str, list[int]] = {}
+    for index, cell in enumerate(header_row, 1):
+        label = _text(cell)
+        if label:
+            seen.setdefault(label, []).append(index)
+
+    name = os.path.basename(path)
+    for label, positions in sorted(seen.items()):
+        if len(positions) == 1:
+            continue
+        if label == TOLERATED_DUPLICATE and len(positions) == 2:
+            print(
+                f"  aviso: {name} repite '{label}' en las columnas "
+                f"{positions[0]} y {positions[1]}; se usa la última, igual que "
+                "el clasificador"
+            )
+            continue
+        if label == TOLERATED_DUPLICATE:
+            # Two is what InvestingPro writes. More than that is a file nobody
+            # produced on purpose, and the last column decides identity, so a
+            # third would quietly change which companies count as the same.
+            raise SystemExit(
+                f"ERROR: {name} trae '{label}' {len(positions)} veces, en las "
+                f"posiciones {', '.join(map(str, positions))}. Un export "
+                "auténtico la trae dos, y la última decide la identidad de cada "
+                "empresa: con más, esa elección deja de ser predecible."
+            )
+        raise SystemExit(
+            f"ERROR: {name} repite la columna '{label}' en las posiciones "
+            f"{', '.join(map(str, positions))}. Solo '{TOLERATED_DUPLICATE}' "
+            "puede venir duplicada; cualquier otra tapa a la primera en "
+            "silencio y el dato leído sería el equivocado."
+        )
+
+
 def read_batch(path: str) -> Batch:
     """Reads one export and pulls out its tickers and capitalizations."""
     rows = _read_sheet(path)
     header_at = _find_header(rows, path)
+    _check_repeated_headers(rows[header_at], path)
     columns = {_text(v): j for j, v in enumerate(rows[header_at]) if _text(v)}
     name_at, ticker_at = columns[NAME], columns[TICKER]
-    cap_at = columns.get(MARKET_CAP)
+    if MARKET_CAP not in columns:
+        raise SystemExit(
+            f"ERROR: {os.path.basename(path)} no trae la columna "
+            f"'{MARKET_CAP}'. Sin ella no se puede ordenar las tandas ni "
+            "comprobar que no falten empresas entre una y otra."
+        )
+    cap_at = columns[MARKET_CAP]
 
     data: list[list[object]] = []
     tickers: list[str] = []
+    identities: list[str] = []
     caps: list[float] = []
     for row in rows[header_at + 1 :]:
         if not row or not _text(_cell(row, name_at)):
             continue
         data.append(list(row))
         tickers.append(_text(_cell(row, ticker_at)))
+        identities.append(_identity(row, columns))
         capitalization = _number(_cell(row, cap_at))
         if capitalization is not None:
             caps.append(capitalization)
 
     header = [_text(cell) for cell in rows[header_at]]
-    return Batch(path=path, header=header, rows=data, tickers=tickers, caps=caps)
+    _require_boundary_capitalizations(data, name_at, cap_at, path)
+    _require_descending_order(data, ticker_at, cap_at, path)
+    if data and len(caps) < len(data):
+        # Harmless for the classification — the method treats capitalization as
+        # optional — but these rows sit outside the top and bottom that order
+        # the batches, so the reader should know they are there.
+        print(
+            f"  aviso: {os.path.basename(path)} trae {len(data) - len(caps)} "
+            f"filas sin '{MARKET_CAP}'; no cuentan para ordenar las tandas"
+        )
+    return Batch(
+        path=path,
+        header=header,
+        columns=columns,
+        rows=data,
+        tickers=tickers,
+        identities=identities,
+        caps=caps,
+    )
 
 
 def find_gaps(batches: list[Batch]) -> list[Gap]:
     """Every boundary must repeat a company. Its absence is a gap."""
     gaps: list[Gap] = []
     for current, following in itertools.pairwise(batches):
-        if set(current.tickers) & set(following.tickers):
+        if set(current.identities) & set(following.identities):
             continue
         gaps.append(
             Gap(
@@ -158,20 +317,59 @@ def find_gaps(batches: list[Batch]) -> list[Gap]:
     return gaps
 
 
+def require_matching_columns(batches: list[Batch]) -> None:
+    """Every export must carry the same columns, or the merge is meaningless.
+
+    A screener reconfigured between downloads yields a different column set, and
+    a merged sheet built from both would hold blanks where the method expects
+    figures. Stopping names the file and what differs; carrying on would classify
+    those companies on data that is not there.
+    """
+    canonical = set(batches[0].columns)
+    for batch in batches[1:]:
+        missing = sorted(canonical - set(batch.columns))
+        extra = sorted(set(batch.columns) - canonical)
+        if not missing and not extra:
+            continue
+        detail = []
+        if missing:
+            detail.append(f"le faltan: {', '.join(missing)}")
+        if extra:
+            detail.append(f"trae de más: {', '.join(extra)}")
+        raise SystemExit(
+            f"ERROR: {batch.name} no tiene las mismas columnas que "
+            f"{batches[0].name} — {'; '.join(detail)}. Vuelve a exportar todas "
+            "las tandas con la misma configuración del screener."
+        )
+
+
 def merge(batches: list[Batch]) -> tuple[list[str], list[list[object]], list[str]]:
-    """Merges the rows, keeping the first appearance of every ticker."""
+    """Merges the rows, keeping the first appearance of every company.
+
+    Kept by identity, not by ticker: two companies can share one, and keying on
+    it drops the second without a word. See `_identity`.
+
+    Values are read by column name, never by position: two exports may list the
+    same columns in a different order, and lining them up by position would slide
+    every value one cell sideways without saying so.
+    """
+    require_matching_columns(batches)
+    canonical = [
+        name for name, _ in sorted(batches[0].columns.items(), key=lambda kv: kv[1])
+    ]
     seen: set[str] = set()
     merged: list[list[object]] = []
     repeated: list[str] = []
     for batch in batches:
-        for ticker, row in zip(batch.tickers, batch.rows):
-            if ticker and ticker in seen:
+        for ticker, identity, row in zip(
+            batch.tickers, batch.identities, batch.rows, strict=True
+        ):
+            if identity in seen:
                 repeated.append(ticker)
                 continue
-            if ticker:
-                seen.add(ticker)
-            merged.append(row)
-    return batches[0].header, merged, repeated
+            seen.add(identity)
+            merged.append([_cell(row, batch.columns.get(name)) for name in canonical])
+    return canonical, merged, repeated
 
 
 def write_sheet(header: list[str], rows: list[list[object]], output: str) -> None:
@@ -213,7 +411,16 @@ def _print_continuity(batches: list[Batch], gaps: list[Gap]) -> None:
                 f"{current.bottom / MILLION:,.2f} M  <-- faltan empresas"
             )
             continue
-        shared = sorted(set(current.tickers) & set(following.tickers))
+        overlap = set(current.identities) & set(following.identities)
+        shared = sorted(
+            {
+                ticker
+                for ticker, identity in zip(
+                    current.tickers, current.identities, strict=True
+                )
+                if identity in overlap
+            }
+        )
         print(
             f"  OK   {current.bottom / MILLION:>12,.2f} M  ->  "
             f"solape: {', '.join(shared[:3])}"
@@ -238,6 +445,23 @@ def _print_next_step(batches: list[Batch], rows_per_export: int = 1000) -> None:
         f"{following} · million\n"
         f"  Si {following} ya está por debajo del tamaño que te interesa, "
         f"has terminado: deja de descargar."
+    )
+
+
+def _require_a_sheet_the_classifier_accepts(companies: int) -> None:
+    """The ceiling counts the header, so one company fewer than it fits.
+
+    Checked before writing: a sheet the screening will refuse is not worth
+    putting on disk, and hearing it here beats hearing it after the upload.
+    """
+    rows_in_sheet = 1 + companies
+    if rows_in_sheet <= CLASSIFIER_ROW_LIMIT:
+        return
+    raise SystemExit(
+        f"ERROR: {companies:,} empresas más la fila de encabezados hacen "
+        f"{rows_in_sheet:,} filas, y el clasificador acepta "
+        f"{CLASSIFIER_ROW_LIMIT:,}. Sube el piso de capitalización y vuelve a "
+        "fusionar: el archivo no se ha escrito."
     )
 
 
@@ -319,6 +543,7 @@ def main(argv: list[str] | None = None) -> int:
     _print_continuity(batches, gaps)
 
     header, merged, repeated = merge(batches)
+    _require_a_sheet_the_classifier_accepts(len(merged))
     # Written next to the exports it merged, not into whatever directory the
     # command happened to run from: the result belongs with its sources.
     output = (
