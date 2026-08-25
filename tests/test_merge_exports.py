@@ -15,6 +15,8 @@ from unittest import mock
 import openpyxl
 import pytest
 from merge_exports import (
+    CLASSIFIER_ROW_LIMIT,
+    FULL_TICKER,
     MARKET_CAP,
     NAME,
     TICKER,
@@ -26,6 +28,7 @@ from merge_exports import (
     main,
     merge,
     read_batch,
+    require_matching_columns,
     resolve_paths,
     write_sheet,
 )
@@ -81,14 +84,14 @@ def test_read_batch_skips_rows_with_no_company_name(tmp_path):
     assert len(read_batch(str(path)).rows) == 1
 
 
-def test_read_batch_tolerates_a_missing_capitalization_column(tmp_path):
+def test_read_batch_refuses_an_export_with_no_capitalization(tmp_path):
+    """Without that column every batch sorts as zero, so the ordering and the
+    boundary check both become theatre: they would report continuity over a
+    sequence nobody established."""
     path = _export(tmp_path / "a.xlsx", [("NVDA Inc", "NVDA")], header=[NAME, TICKER])
-    batch = read_batch(str(path))
 
-    assert batch.tickers == ["NVDA"]
-    assert batch.caps == []
-    assert batch.top == 0.0
-    assert batch.bottom == 0.0
+    with pytest.raises(SystemExit, match="no trae la columna"):
+        read_batch(str(path))
 
 
 def test_read_batch_refuses_a_file_with_no_header_row(tmp_path):
@@ -283,8 +286,16 @@ def test_main_refuses_a_pattern_that_matches_nothing(tmp_path):
         main([str(tmp_path / "nada-*.xlsx")])
 
 
-def test_batch_reports_no_ticker_for_a_row_shorter_than_the_header():
-    batch = Batch(path="a.xlsx", header=HEADER, rows=[], tickers=[], caps=[])
+def test_an_empty_batch_reports_zero_rather_than_raising():
+    batch = Batch(
+        path="a.xlsx",
+        header=HEADER,
+        columns={},
+        rows=[],
+        tickers=[],
+        identities=[],
+        caps=[],
+    )
     assert batch.top == 0.0
     assert batch.bottom == 0.0
 
@@ -310,3 +321,357 @@ def test_the_tool_runs_as_a_command(project_root, tmp_path, capsys):
 
     capsys.readouterr()
     assert exit_info.value.code == 0
+
+
+def test_columns_are_read_by_name_not_by_position(tmp_path):
+    """Two exports may list the same columns in a different order. Lining them
+    up by position slides every value one cell sideways and says nothing: the
+    ticker lands under the company name and the sheet still looks plausible."""
+    first = _export(tmp_path / "a.xlsx", [("Nvidia", "NVDA", 5e12)])
+    second = _export(
+        tmp_path / "b.xlsx",
+        [("AAPL", "Apple", 4e12)],
+        header=[TICKER, NAME, MARKET_CAP],
+    )
+
+    header, rows, _ = merge([read_batch(str(first)), read_batch(str(second))])
+
+    assert header == HEADER
+    assert rows[1][0] == "Apple"  # under Name, not the ticker
+    assert rows[1][1] == "AAPL"
+
+
+def test_a_batch_with_different_columns_stops_the_merge(tmp_path):
+    """A screener reconfigured between downloads yields a different column set,
+    and a sheet built from both holds blanks where the method expects figures."""
+    first = _export(tmp_path / "a.xlsx", [("Nvidia", "NVDA", 5e12)])
+    wider = _export(
+        tmp_path / "b.xlsx",
+        [("Meta", "META", 1e12, 20)],
+        header=[NAME, TICKER, MARKET_CAP, "P/E Ratio"],
+    )
+
+    # Read both outside the block: with the reads inside it, a failure there
+    # would satisfy pytest.raises and the test would pass without merge() ever
+    # having refused anything.
+    batches = [read_batch(str(first)), read_batch(str(wider))]
+
+    with pytest.raises(SystemExit) as failure:
+        merge(batches)
+
+    assert "trae de más: P/E Ratio" in str(failure.value)
+    assert "b.xlsx" in str(failure.value)
+
+
+def test_a_batch_missing_a_column_stops_the_merge(tmp_path):
+    wide = Batch(
+        path="a.xlsx",
+        header=[NAME, TICKER, MARKET_CAP],
+        columns={NAME: 0, TICKER: 1, MARKET_CAP: 2},
+        rows=[],
+        tickers=[],
+        identities=[],
+        caps=[1.0],
+    )
+    narrow = Batch(
+        path="b.xlsx",
+        header=[NAME, TICKER],
+        columns={NAME: 0, TICKER: 1},
+        rows=[],
+        tickers=[],
+        identities=[],
+        caps=[1.0],
+    )
+
+    with pytest.raises(SystemExit) as failure:
+        require_matching_columns([wide, narrow])
+
+    assert f"le faltan: {MARKET_CAP}" in str(failure.value)
+
+
+def test_the_mirrored_row_limit_matches_the_classifier():
+    """merge_exports keeps its own copy of the ceiling so it runs standalone,
+    without importing the package. This is what keeps the copy honest."""
+    from vhc_screening import io as screening_io
+
+    assert CLASSIFIER_ROW_LIMIT == screening_io.MAX_WORKSHEET_ROWS
+
+
+def test_the_ceiling_counts_the_header_row(tmp_path, capsys, monkeypatch):
+    """The classifier limits the whole sheet, header included, so a limit of 3
+    fits two companies and not three. Off by one here writes a file that the
+    screening then refuses, which is the worst of both."""
+    monkeypatch.setattr("merge_exports.CLASSIFIER_ROW_LIMIT", 3)
+    _slice(tmp_path, "a.xlsx", ["AAA", "BBB"], [5e12, 4e12])
+    output = tmp_path / "u.xlsx"
+
+    assert main([str(tmp_path / "a.xlsx"), "-o", str(output)]) == 0
+    capsys.readouterr()
+    assert output.exists()
+
+
+def test_a_sheet_past_the_ceiling_is_refused_without_writing(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr("merge_exports.CLASSIFIER_ROW_LIMIT", 3)
+    _slice(tmp_path, "a.xlsx", ["AAA", "BBB", "CCC"], [5e12, 4e12, 3e12])
+    output = tmp_path / "u.xlsx"
+
+    with pytest.raises(SystemExit) as failure:
+        main([str(tmp_path / "a.xlsx"), "-o", str(output)])
+
+    capsys.readouterr()
+    assert "4 filas" in str(failure.value)
+    assert not output.exists(), "no debe escribir una hoja que el screening rechaza"
+
+
+def test_a_repeated_header_is_reported_rather_than_refused(tmp_path, capsys):
+    """A real InvestingPro export repeats 'Full Ticker', so refusing duplicates
+    would refuse every genuine file. The last one wins, which is what the
+    classifier reads as well."""
+    path = _export(
+        tmp_path / "a.xlsx",
+        [("NVDA Inc", "NVDA", 5e12, "NASDAQGS:NVDA", "NasdaqGS:NVDA")],
+        header=[NAME, TICKER, MARKET_CAP, "Full Ticker", "Full Ticker"],
+    )
+
+    batch = read_batch(str(path))
+    printed = capsys.readouterr().out
+
+    assert "repite 'Full Ticker'" in printed
+    assert batch.columns["Full Ticker"] == 4
+    assert len(batch.rows) == 1
+
+
+@pytest.mark.parametrize("repeated", [TICKER, NAME, MARKET_CAP])
+def test_any_header_other_than_full_ticker_stops_the_read(tmp_path, repeated):
+    """Full Ticker is tolerated because InvestingPro really does repeat it. The
+    exception ends there: a second Ticker or Market Cap column takes over the
+    first, and nothing downstream can tell which one it read."""
+    header = [NAME, TICKER, MARKET_CAP, repeated]
+    path = _export(
+        tmp_path / "a.xlsx", [("Nvidia", "NVDA", 5e12, "MAL")], header=header
+    )
+
+    with pytest.raises(SystemExit) as failure:
+        read_batch(str(path))
+
+    assert f"repite la columna '{repeated}'" in str(failure.value)
+
+
+@pytest.mark.parametrize(
+    ("rows", "edge"),
+    [
+        ([("Primera", "AAA", None), ("Fin", "ZZZ", 1e9)], "primera"),
+        ([("Uno", "AAA", 5e12), ("Ultima", "ZZZ", None)], "última"),
+    ],
+)
+def test_an_edge_without_capitalization_stops_the_read(tmp_path, rows, edge):
+    """The first row places the batch among the others and the last one yields
+    the next filter. A blank at either end pairs one company's ticker with
+    another company's number, and the boundary announced never existed."""
+    path = _export(tmp_path / "a.xlsx", rows)
+
+    with pytest.raises(SystemExit) as failure:
+        read_batch(str(path))
+
+    assert f"la {edge} empresa" in str(failure.value)
+
+
+def test_a_gap_in_the_middle_is_kept_and_only_reported(tmp_path, capsys):
+    """Capitalization is optional for the method, so an interior blank merges
+    like any other row. Only the ordering ignores it."""
+    path = _export(
+        tmp_path / "a.xlsx",
+        [("Uno", "AAA", 5e12), ("Medio", "BBB", None), ("Fin", "CCC", 1e9)],
+    )
+
+    batch = read_batch(str(path))
+
+    assert len(batch.rows) == 3
+    assert "1 filas sin" in capsys.readouterr().out
+
+
+def test_an_export_with_no_companies_says_so(tmp_path):
+    path = _export(tmp_path / "a.xlsx", [])
+
+    with pytest.raises(SystemExit, match="ninguna empresa"):
+        read_batch(str(path))
+
+
+def test_a_blank_cell_in_the_header_row_is_ignored(tmp_path):
+    """Exports carry empty cells between column groups; they name no column."""
+    path = _export(
+        tmp_path / "a.xlsx",
+        [("Nvidia", "NVDA", 5e12, None)],
+        header=[NAME, TICKER, MARKET_CAP, None],
+    )
+
+    batch = read_batch(str(path))
+
+    assert MARKET_CAP in batch.columns
+    assert "" not in batch.columns
+
+
+def test_a_row_shorter_than_the_header_yields_blanks_not_an_error():
+    """A sheet may end its rows early when the trailing cells are empty. Those
+    columns come back blank rather than raising, which is what the classifier
+    does with them too."""
+    batch = Batch(
+        path="a.xlsx",
+        header=HEADER,
+        columns={NAME: 0, TICKER: 1, MARKET_CAP: 2},
+        rows=[["Nvidia", "NVDA"]],  # the capitalization cell is simply absent
+        tickers=["NVDA"],
+        identities=["nvda\x00nvidia"],
+        caps=[5e12],
+    )
+
+    _, rows, _ = merge([batch])
+
+    assert rows == [["Nvidia", "NVDA", None]]
+
+
+@pytest.mark.parametrize(
+    ("caps", "accepted"),
+    [
+        ([500e6, 300e6, 100e6], True),
+        ([500e6, None, 100e6], True),  # an interior gap is already tolerated
+        ([500e6, 500e6, 100e6], True),  # ties are an order, not a break
+        ([500e6, 100e6, 300e6], False),
+    ],
+    ids=["descending", "interior-gap", "ties", "rises-again"],
+)
+def test_a_batch_must_run_from_the_largest_capitalization_down(
+    tmp_path, capsys, caps, accepted
+):
+    """Everything reported about a batch reads its edges: the first row places
+    it among the others, the last yields the next filter. Sorted any other way,
+    one company's ticker is announced with another company's number."""
+    rows = [(f"Empresa {i}", f"T{i}", cap) for i, cap in enumerate(caps)]
+    path = _export(tmp_path / "a.xlsx", rows)
+
+    if accepted:
+        assert len(read_batch(str(path)).rows) == len(caps)
+        capsys.readouterr()
+        return
+
+    with pytest.raises(SystemExit) as failure:
+        read_batch(str(path))
+    assert "no está ordenado de mayor a menor" in str(failure.value)
+
+
+def test_an_unordered_batch_is_refused_rather_than_sorted(tmp_path):
+    """Sorting would hide the cause — a screener exported without the
+    capitalization descending — and the next download would repeat it."""
+    path = _export(
+        tmp_path / "a.xlsx",
+        [("Top", "TOP", 500e6), ("Low", "LOW", 100e6), ("Last", "LAST", 300e6)],
+    )
+
+    with pytest.raises(SystemExit) as failure:
+        read_batch(str(path))
+
+    # The message names both companies, so the export can be found and redone.
+    assert "LAST" in str(failure.value)
+    assert "LOW" in str(failure.value)
+
+
+def test_two_companies_sharing_a_ticker_both_survive(tmp_path):
+    """A ticker does not identify a company. In an August 2026 export, FLYX is
+    both Flyexclusive Inc on NYSE and FlyE Group Inc on NYSEAM. Keyed on the
+    ticker, the second is dropped and the merged sheet gives no sign of it."""
+    path = _export(
+        tmp_path / "a.xlsx",
+        [
+            ("Flyexclusive Inc", "FLYX", 5e8, "NYSE:FLYX"),
+            ("FlyE Group Inc", "FLYX", 4e8, "NYSEAM:FLYX"),
+        ],
+        header=[NAME, TICKER, MARKET_CAP, FULL_TICKER],
+    )
+
+    _, rows, repeated = merge([read_batch(str(path))])
+
+    assert len(rows) == 2
+    assert repeated == []
+
+
+def test_the_same_company_across_two_batches_is_still_one(tmp_path):
+    """The boundary duplicate must keep collapsing: it is the same listing."""
+    first = _export(
+        tmp_path / "a.xlsx",
+        [
+            ("Nvidia", "NVDA", 5e12, "NASDAQGS:NVDA"),
+            ("PTC", "PTCT", 5.9e9, "NASDAQGS:PTCT"),
+        ],
+        header=[NAME, TICKER, MARKET_CAP, FULL_TICKER],
+    )
+    second = _export(
+        tmp_path / "b.xlsx",
+        # The exchange spelled differently, as the two Full Ticker columns do.
+        [
+            ("PTC", "PTCT", 5.9e9, "NasdaqGS:PTCT"),
+            ("Universal", "UVE", 1.2e9, "NYSE:UVE"),
+        ],
+        header=[NAME, TICKER, MARKET_CAP, FULL_TICKER],
+    )
+
+    batches = [read_batch(str(first)), read_batch(str(second))]
+
+    assert find_gaps(batches) == []
+    _, rows, repeated = merge(batches)
+    assert len(rows) == 3
+    assert repeated == ["PTCT"]
+
+
+def test_without_full_ticker_identity_falls_back_to_ticker_and_name(tmp_path):
+    """`Full Ticker` is optional for the method, so its absence cannot stop the
+    merge. Ticker plus name still tells two companies apart."""
+    path = _export(
+        tmp_path / "a.xlsx",
+        [("Flyexclusive Inc", "FLYX", 5e8), ("FlyE Group Inc", "FLYX", 4e8)],
+    )
+
+    _, rows, repeated = merge([read_batch(str(path))])
+
+    assert len(rows) == 2
+    assert repeated == []
+
+
+def test_a_boundary_of_two_different_companies_is_not_continuity(tmp_path):
+    """Matching tickers across a boundary prove nothing if the companies differ:
+    the range between them was never covered."""
+    first = _export(
+        tmp_path / "a.xlsx",
+        [
+            ("Nvidia", "NVDA", 5e12, "NASDAQGS:NVDA"),
+            ("Flyexclusive", "FLYX", 5e8, "NYSE:FLYX"),
+        ],
+        header=[NAME, TICKER, MARKET_CAP, FULL_TICKER],
+    )
+    second = _export(
+        tmp_path / "b.xlsx",
+        [("FlyE Group", "FLYX", 4e8, "NYSEAM:FLYX"), ("Otra", "ZZZ", 1e8, "NYSE:ZZZ")],
+        header=[NAME, TICKER, MARKET_CAP, FULL_TICKER],
+    )
+
+    gaps = find_gaps([read_batch(str(first)), read_batch(str(second))])
+
+    assert len(gaps) == 1, "same ticker, different companies: no continuity proved"
+
+
+def test_a_third_full_ticker_column_stops_the_read(tmp_path):
+    """Two is what InvestingPro writes, and the last one decides identity. A
+    third makes that choice unpredictable, and identity is what keeps two
+    companies sharing a ticker apart."""
+    path = _export(
+        tmp_path / "a.xlsx",
+        [("Nvidia", "NVDA", 5e12, "A", "B", "C")],
+        header=[NAME, TICKER, MARKET_CAP, FULL_TICKER, FULL_TICKER, FULL_TICKER],
+    )
+
+    with pytest.raises(SystemExit) as failure:
+        read_batch(str(path))
+
+    assert "3 veces" in str(failure.value)
+    assert "4, 5, 6" in str(failure.value)

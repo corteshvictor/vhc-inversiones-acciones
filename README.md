@@ -209,7 +209,7 @@ No filtres por sector. El propio screening aparta financieras y utilities sin pe
 
 - Usa InvestingPro en **inglés**.
 - Agrega las columnas con el botón `+` y conserva exactamente sus nombres.
-- El orden no importa: el programa las busca por encabezado.
+- El orden de las columnas no importa: el programa las busca por encabezado. El de las filas sí, si vas a fusionar varias tandas — consérvalas ordenadas por `Market Cap (Adjusted)` de mayor a menor, que es como salen del screener. La herramienta se detiene si encuentra lo contrario.
 - No edites ni traduzcas los encabezados después de exportar.
 - Exporta a Excel con **Export → Excel**.
 - Cada export tiene un límite de 1.000 filas y normalmente queda ordenado por capitalización bursátil. Para analizar más empresas, combina varios exports en una sola hoja bajo una única fila de encabezados: el clasificador acepta hasta 10.000 filas y 10 MiB.
