@@ -100,10 +100,27 @@ def test_read_export_reports_inspection_error(monkeypatch, tmp_path):
         read_export(path)
 
 
-def test_xlsx_limit_is_5_mib_and_accepts_incomplete_real_fixture(
+def test_xlsx_limits_hold_a_universe_wider_than_one_export(
     incomplete_market_view_path,
 ):
-    assert screening_io.MAX_XLSX_FILE_BYTES == 5 * 1024 * 1024
+    """InvestingPro caps a single export at 1,000 rows, so a wider universe is
+    assembled by combining several into one sheet. The ceiling sizes for that
+    file, not for one export: the row ceiling clears the whole primary-listed
+    US universe with room to spare, and the byte ceiling holds those rows at
+    the density actually measured. A file that large has necessarily been
+    assembled — InvestingPro hands out 1,000 rows at a time — and both Excel
+    and the merge script deflate the sheet about fivefold, which puts 10,000
+    rows near 3 MiB. The 10 MiB kept here still admits a writer that compresses
+    only half as well."""
+    us_universe = 8_723  # Primary-listed US companies, InvestingPro, 2026-08.
+    merged_bytes_per_row = 370  # Measured on an assembled sheet, deflated.
+    assert screening_io.MAX_XLSX_FILE_BYTES == 10 * 1024 * 1024
+    assert screening_io.MAX_WORKSHEET_ROWS == 10_000
+    assert screening_io.MAX_WORKSHEET_ROWS > us_universe
+    assert (
+        screening_io.MAX_XLSX_FILE_BYTES
+        >= screening_io.MAX_WORKSHEET_ROWS * merged_bytes_per_row * 2
+    )
     assert incomplete_market_view_path.stat().st_size < screening_io.MAX_XLSX_FILE_BYTES
 
 
