@@ -483,11 +483,15 @@ _GLOSSARY = (
         "Piotroski",
         (
             "Puntuación de 0 a 9 que resume nueve pruebas contables de rentabilidad, "
-            "deuda y eficiencia. El método la cuenta como señal sana a partir de 7."
+            "deuda y eficiencia. El método la cuenta como señal sana a partir de 7. "
+            "Piotroski (2000), «Value Investing: The Use of Historical Financial "
+            "Statement Information to Separate Winners from Losers»."
         ),
         (
             "A 0-to-9 score summarizing nine accounting tests of profitability, debt "
-            "and efficiency. The method counts it as a healthy signal at or above 7."
+            "and efficiency. The method counts it as a healthy signal at or above 7. "
+            "Piotroski (2000), \u201cValue Investing: The Use of Historical Financial "
+            "Statement Information to Separate Winners from Losers\u201d."
         ),
     ),
     (
@@ -498,12 +502,14 @@ _GLOSSARY = (
         (
             "Modelo que estima la cercanía a una situación de insolvencia. Por encima "
             "de 3 es zona segura; por debajo de 1,81 el método clasifica la salud "
-            "como débil directamente."
+            "como débil directamente. Altman (1968), «Financial Ratios, Discriminant "
+            "Analysis and the Prediction of Corporate Bankruptcy»."
         ),
         (
             "A model estimating how close a company is to insolvency. Above 3 is the "
             "safe zone; below 1.81 the method classifies financial health as weak "
-            "outright."
+            "outright. Altman (1968), \u201cFinancial Ratios, Discriminant Analysis and "
+            "the Prediction of Corporate Bankruptcy\u201d."
         ),
     ),
     (
@@ -514,13 +520,14 @@ _GLOSSARY = (
         (
             "Modelo que estima la probabilidad de que las cuentas estén manipuladas. "
             "El método pide ≤ −1,78; por encima levanta la alerta M-Score. No prueba "
-            "fraude: dice que los números merecen una segunda mirada."
+            "fraude: dice que los números merecen una segunda mirada. Beneish (1999), "
+            "«The Detection of Earnings Manipulation»."
         ),
         (
             "A model estimating the likelihood that the accounts have been "
             "manipulated. The method asks for ≤ −1.78; above that it raises the "
             "M-Score alert. It does not prove fraud: it says the numbers deserve a "
-            "second look."
+            "second look. Beneish (1999), \u201cThe Detection of Earnings Manipulation\u201d."
         ),
     ),
     (
@@ -604,11 +611,13 @@ _GLOSSARY = (
         "Greenblatt",
         (
             "Lente de calidad centrada en el ROIC actual y su media de cinco años: "
-            "busca negocios que rentabilizan bien el capital de forma sostenida."
+            "busca negocios que rentabilizan bien el capital de forma sostenida. "
+            "Greenblatt (2005), «The Little Book That Beats the Market»."
         ),
         (
             "A quality lens built on current ROIC and its five-year average: it looks "
-            "for businesses that turn capital into returns consistently."
+            "for businesses that turn capital into returns consistently. "
+            "Greenblatt (2005), \u201cThe Little Book That Beats the Market\u201d."
         ),
     ),
     (
@@ -619,11 +628,12 @@ _GLOSSARY = (
         (
             "Lente de calidad que combina rentabilidad sobre el patrimonio con "
             "apalancamiento: un ROE alto sostenido con deuda pesa distinto que sin "
-            "ella."
+            "ella. Sigue la metodología de los índices de calidad de MSCI."
         ),
         (
             "A quality lens combining return on equity with leverage: a high ROE held "
-            "up by debt weighs differently from one that is not."
+            "up by debt weighs differently from one that is not. It follows the MSCI "
+            "quality index methodology."
         ),
     ),
     (
@@ -634,11 +644,14 @@ _GLOSSARY = (
         (
             "Lente de calidad con cuatro pilares —rentabilidad, crecimiento, "
             "seguridad y retribución al accionista—. Necesita al menos tres a favor y "
-            "ninguno en contra."
+            "ninguno en contra. Asness, Frazzini y Pedersen (2019), «Quality Minus "
+            "Junk», AQR Capital."
         ),
         (
             "A quality lens with four pillars: profitability, growth, safety and "
-            "shareholder payout. It needs at least three in favor and none against."
+            "shareholder payout. It needs at least three in favor and none against. "
+            "Asness, Frazzini and Pedersen (2019), \u201cQuality Minus Junk\u201d, "
+            "AQR Capital."
         ),
     ),
 )
@@ -935,7 +948,11 @@ def _panes(evaluations: dict, order: list[int], counts, omitted: int) -> str:
     )
     panes = []
     for bucket, key, _label in _BUCKET_TABS:
-        detail = bucket in (BUCKET_DEEP_DIVE, BUCKET_WATCHLIST)
+        # Neutral holds companies of good quality that missed one gate, and
+        # which gate is the useful part, so those rows open too. Discarded does
+        # not: 2,301 detail blocks would take the file past 14 MiB, and a
+        # company that failed by a wide margin has no nuance left to inspect.
+        detail = bucket in (BUCKET_DEEP_DIVE, BUCKET_WATCHLIST, BUCKET_NEUTRAL)
         rows_hint = (
             f"<span{_en('click a row to see its three tribunals')}>"
             "clic en una fila para ver sus tres tribunales</span>"
@@ -1311,7 +1328,12 @@ se pregunta si el negocio es bueno, después si está sano, y solo al final si e
 <p{_en("The score out of 10 is the sum of the three gates: <b>quality</b> (0–3 lenses), <b>health</b> (0–3 signals) and <b>price</b> (0–4 signals in favor). The ten cells beside each company show where its points come from, so two companies with the same total can tell different stories.")}>El puntaje sobre 10 es la suma de las tres puertas: <b>calidad</b> (0–3 lentes),
 <b>salud</b> (0–3 señales) y <b>precio</b> (0–4 señales a favor). Las diez celdas junto a cada
 empresa muestran de dónde salen sus puntos, así que dos empresas con el mismo total pueden
-contar historias distintas.</p></div>
+contar historias distintas.</p>
+<p{_en("The score does not decide the category. That is settled by the order of the gates: quality first, then health, and only at the end price. A company can therefore score 9/10 and stay in Neutral because it wins two of the three quality lenses instead of all three, while another reaches Deep Dive with 7/10. Open any row to see which gate it missed.")}>
+<b>El puntaje no decide la categoría.</b> Esa la decide el orden de las puertas: primero
+calidad, luego salud, y solo al final precio. Por eso una empresa puede sacar 9/10 y quedarse
+en Neutral porque gana dos de las tres lentes de calidad en vez de las tres, mientras otra
+llega a Deep Dive con 7/10. Abre cualquier fila para ver qué puerta no superó.</p></div>
 {_glossary_section()}
 {_alerts_section()}
 <div class="gs"><h3{_en("Educational, not advice")}>Educativo, no asesoría</h3>
