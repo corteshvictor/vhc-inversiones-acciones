@@ -189,9 +189,11 @@ The exact column names are listed in [`references/REFERENCE.md`](references/REFE
 ## Where the method comes from
 
 None of the six models the classifier uses was invented here: every one comes
-from published, citable work. What version 1.0 contributes is the combination
-and the specific thresholds, which can be argued against their source instead of
-taken on faith.
+from published work and remains its authors'. Neither did the way they are
+combined — where that came from is in the [acknowledgement](#acknowledgement) a
+few lines below. What version 1.0 does is implement that combination and set each
+threshold beside its source, so it can be argued against instead of taken on
+faith.
 
 | Model | Origin | What it measures here |
 |---|---|---|
@@ -212,6 +214,20 @@ pass for a company to be EXCELLENT. The last three form **financial health**.
 **Price** uses no academic model at all: it counts signals for and against from
 `EV / EBIT`, the free cash flow yield, the discount to fair value and the
 analyst label.
+
+### Acknowledgement
+
+This project began by using the screening skill that **Aprende a Invertir**
+publishes on its site, and took from it the order of the method — quality,
+health, price — the sector exclusion of financials and utilities, and the idea of
+the five categories. It can be downloaded [here](https://aprendeainvertir.notion.site/Skill-Screening-Aprende-a-Invertir-3a7a6dd342358159be26ca80b9eb472e).
+
+The code in this repository is a reimplementation written for VHC Inversiones: a
+modular architecture, tests at full coverage, bilingual output, distribution for
+Claude, ChatGPT and Codex, the qualitative route for PDF reports, and the tools
+under `tools/`. The six models in the table above come from published work and
+belong to their authors; the credit for articulating them into the method that
+inspired this project, and for teaching it, belongs to Aprende a Invertir.
 
 The exact thresholds are in the tables below, and they are the ones of method
 version 1.0. Changing them changes the classification, so `SCREENING_VERSION`
