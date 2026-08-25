@@ -304,9 +304,11 @@ que rara vez existe a esa escala— envejece mejor que el número.
 ## De dónde viene el método
 
 Ninguno de los seis modelos que usa el clasificador es invención de este
-proyecto: todos vienen de trabajos publicados y citables. Lo que aporta la
-versión 1.0 es la combinación y los umbrales concretos, que se pueden discutir
-contra su fuente en vez de aceptarlos porque sí.
+proyecto: todos proceden de trabajos publicados y siguen siendo de sus autores.
+Y la forma de combinarlos tampoco nació aquí — de dónde viene está en el
+[reconocimiento](#reconocimiento), unas líneas más abajo. Lo que hace la versión
+1.0 es implementar esa combinación y dejar cada umbral escrito junto a su
+fuente, para que se pueda discutir contra ella en vez de aceptarlo porque sí.
 
 | Modelo | Origen | Qué mide aquí |
 |---|---|---|
@@ -327,6 +329,21 @@ falta las tres para que una empresa sea EXCELENTE—. Los tres últimos forman l
 de **salud financiera**. El **precio** no usa ningún modelo académico: suma
 señales a favor y en contra de `EV / EBIT`, el rendimiento del flujo de caja
 libre, el descuento frente al fair value y la etiqueta de los analistas.
+
+### Reconocimiento
+
+Este proyecto nació usando el skill de screening que **Aprende a Invertir**
+publica en su web, y del que tomó el orden del método —calidad, salud, precio—,
+la exclusión sectorial de financieras y utilities, y la idea de las cinco
+categorías. Puede descargarse [aquí](https://aprendeainvertir.notion.site/Skill-Screening-Aprende-a-Invertir-3a7a6dd342358159be26ca80b9eb472e).
+
+El código de este repositorio es una reimplementación escrita para VHC
+Inversiones: arquitectura modular, pruebas con cobertura completa, salida
+bilingüe, distribución para Claude, ChatGPT y Codex, la ruta cualitativa de
+reportes PDF y las herramientas de `tools/`. Los seis modelos de la tabla de
+arriba proceden de trabajos publicados y son de sus autores; el mérito de
+haberlos articulado en el método que inspiró este proyecto, y de haberlo
+enseñado, es de Aprende a Invertir.
 
 Los umbrales exactos de cada uno están en las tablas de abajo, y son los de la
 versión 1.0 del método. Cambiarlos cambia la clasificación, así que
