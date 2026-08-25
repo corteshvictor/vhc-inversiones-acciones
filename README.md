@@ -18,6 +18,8 @@ La versión cuantitativa actual es **v1.0**. El clasificador reduce un universo 
 - [Inicio rápido](#inicio-rápido)
 - [Instalación](#instalación-en-claude-chatgpt-y-codex)
 - [Preparar InvestingPro](#preparar-el-screener-de-investingpro)
+- [Analizar más de 1.000 empresas](#analizar-más-de-1000-empresas)
+- [De dónde viene el método](#de-dónde-viene-el-método)
 - [Todos los indicadores](#todos-los-indicadores)
 - [Cómo clasifica](#cómo-funciona-la-clasificación)
 - [Uso por tipo de archivo](#cómo-usar-cada-tipo-de-archivo)
@@ -210,8 +212,72 @@ No filtres por sector. El propio screening aparta financieras y utilities sin pe
 - El orden no importa: el programa las busca por encabezado.
 - No edites ni traduzcas los encabezados después de exportar.
 - Exporta a Excel con **Export → Excel**.
-- El export tiene un límite de 1.000 filas y normalmente queda ordenado por capitalización bursátil.
+- Cada export tiene un límite de 1.000 filas y normalmente queda ordenado por capitalización bursátil. Para analizar más empresas, combina varios exports en una sola hoja bajo una única fila de encabezados: el clasificador acepta hasta 10.000 filas y 10 MiB.
 - Adjunta el archivo en el mismo mensaje donde solicitas el screening.
+
+### Analizar más de 1.000 empresas
+
+Cada export corta en 1.000 filas. Para cubrir un universo más ancho se descarga
+por tramos y se unen los archivos en una sola hoja. El repositorio trae la
+herramienta que los une y, sobre todo, **que comprueba que no se perdió nadie
+por el camino**.
+
+**El principio, y es lo único que hay que entender:** cada tanda arranca donde
+terminó la anterior. Si el filtro se redondea **hacia arriba**, la última
+empresa de una tanda reaparece como primera de la siguiente. Ese duplicado no
+estorba —se elimina al fusionar— y es la prueba de que entre las dos no quedó
+ningún hueco. Si se redondea hacia abajo, las empresas de ese tramo no entran en
+ninguna tanda y **nada en el archivo delata su ausencia**.
+
+**Paso a paso.** Solo se toca un número, y el propio programa lo calcula:
+
+1. Exporta **sin filtros**. Salen las 1.000 mayores.
+2. Une lo descargado:
+
+```bash
+cd /ruta/a/vhc-inversiones-acciones
+python tools/merge_exports.py ~/Downloads/Untitled*.xlsx
+```
+
+Dos detalles que ahorran un rato de pelea con la terminal: el comando sale de la
+**raíz del repositorio**, porque la herramienta vive en `tools/`; y acepta tanto
+la lista de archivos que expande la terminal como un comodín entre comillas
+—`"~/Downloads/Untitled Screener*.xlsx"`—, que es lo que hace falta cuando los
+nombres llevan espacios antes del asterisco.
+
+El resultado queda junto a los exports, en `universe.xlsx`. Con `-o` se escribe
+en otro sitio.
+
+3. Al final de su salida, en `SIGUIENTE TANDA`, aparecen las cuatro casillas que
+   hay que rellenar: columna, comparador, número y unidad. Cópialas al filtro y
+   exporta otra vez.
+4. Vuelve al paso 2. Cuando el número que proponga baje del tamaño que te
+   interesa —100 M, por ejemplo—, has terminado: deja de descargar. No hace
+   falta ningún filtro de piso.
+
+Cuando una tanda traiga menos de 1.000 filas, el programa lo dice y el universo
+está completo.
+
+La herramienta ordena las tandas por capitalización, revisa frontera por
+frontera, elimina los duplicados y escribe una hoja única con una sola fila de
+encabezados. Termina con `Sin huecos` cuando todo encaja. Si falta un solape,
+nombra el tramo perdido y da el filtro exacto para recuperarlo, tanto para la
+web como para la API.
+
+**Tres avisos que ahorran una descarga perdida:**
+
+- **Descarga todas las tandas el mismo día.** Las capitalizaciones cambian con
+  el precio, y mezclar fechas rompe las fronteras.
+- **Usa un directorio limpio.** El comodín recoge todo lo que coincida, así que
+  un export viejo se cuela y estropea el resultado.
+- **Redondea siempre hacia arriba.** Un duplicado sobra y se ve; un hueco no
+  deja rastro.
+
+**No hace falta bajar hasta el fondo del mercado.** Sobre el universo completo
+de EE. UU. —8.723 empresas— ninguna por debajo de 292 M de capitalización llegó
+a Deep Dive ni a Watchlist: el método pide ROIC alto sostenido cinco años, y por
+debajo de esa talla casi nunca hay ni datos ni analistas que cubran la empresa.
+Un piso de 100 M deja el universo en unas 3.800 sin perder un solo candidato.
 
 ### Resumen de columnas
 
@@ -220,6 +286,37 @@ No filtres por sector. El propio screening aparta financieras y utilities sin pe
 | Esenciales | 3 | El screening se detiene |
 | Núcleo | 17 | El screening se detiene antes de clasificar y no genera archivos |
 | Opcionales | 5 | El análisis se genera; se pierde contexto, ordenación o enlaces |
+
+## De dónde viene el método
+
+Ninguno de los seis modelos que usa el clasificador es invención de este
+proyecto: todos vienen de trabajos publicados y citables. Lo que aporta la
+versión 1.0 es la combinación y los umbrales concretos, que se pueden discutir
+contra su fuente en vez de aceptarlos porque sí.
+
+| Modelo | Origen | Qué mide aquí |
+|---|---|---|
+| **Greenblatt** | Joel Greenblatt, *The Little Book That Beats the Market*, Wiley, 2005 | Rendimiento sobre el capital invertido: `ROIC` actual y su promedio a cinco años |
+| **MSCI** | Metodología de los índices de calidad de MSCI | `ROE` alto acompañado de un apalancamiento sano |
+| **AQR** | Asness, Frazzini y Pedersen, *Quality Minus Junk*, Review of Accounting Studies 24(1), 2019, pp. 34–112 — [doi](https://doi.org/10.1007/s11142-018-9470-2) | Cuatro pilares: rentable, que crece, segura y que devuelve capital |
+| **Piotroski** | Joseph Piotroski, *Value Investing: The Use of Historical Financial Statement Information to Separate Winners from Losers*, Journal of Accounting Research 38, 2000, pp. 1–41 — [doi](https://doi.org/10.2307/2672906) | El F-Score de nueve criterios sobre la solidez contable |
+| **Altman** | Edward Altman, *Financial Ratios, Discriminant Analysis and the Prediction of Corporate Bankruptcy*, The Journal of Finance 23(4), 1968, pp. 589–609 — [doi](https://doi.org/10.1111/j.1540-6261.1968.tb00843.x) | La Z-Score, distancia a la quiebra |
+| **Beneish** | Messod Beneish, *The Detection of Earnings Manipulation*, Financial Analysts Journal 55(5), 1999, pp. 24–36 — [doi](https://doi.org/10.2469/faj.v55.n5.2296) | El M-Score, patrones compatibles con manipulación contable |
+
+Cada enlace es un **DOI**: un identificador permanente que resuelve siempre a la
+página de la editorial. No apuntan a agregadores ni a copias sueltas, que
+cambian de sitio o desaparecen. El trabajo de Greenblatt es un libro y no
+tiene DOI; MSCI publica su metodología de índices en su propio sitio.
+
+Los tres primeros forman la puerta de **calidad** —una lente cada uno, y hacen
+falta las tres para que una empresa sea EXCELENTE—. Los tres últimos forman la
+de **salud financiera**. El **precio** no usa ningún modelo académico: suma
+señales a favor y en contra de `EV / EBIT`, el rendimiento del flujo de caja
+libre, el descuento frente al fair value y la etiqueta de los analistas.
+
+Los umbrales exactos de cada uno están en las tablas de abajo, y son los de la
+versión 1.0 del método. Cambiarlos cambia la clasificación, así que
+`SCREENING_VERSION` se mueve con ellos.
 
 ## Todos los indicadores
 
