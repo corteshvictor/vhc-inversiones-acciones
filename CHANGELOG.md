@@ -20,6 +20,22 @@ threshold, a lens, a gate or the score itself changes.
 
 <!-- release-please will insert released versions below this line. -->
 
+## [1.1.1](https://github.com/corteshvictor/vhc-inversiones-acciones/compare/v1.1.0...v1.1.1) (2026-08-26)
+
+
+### Bug Fixes
+
+* **docs:** make the packaged reference state what the package does ([8b7e32c](https://github.com/corteshvictor/vhc-inversiones-acciones/commit/8b7e32c56c37bd4d207ff33e30f31b7ec6f964a5))
+* **tools:** keep every company a merged export contains ([2a9cbf6](https://github.com/corteshvictor/vhc-inversiones-acciones/commit/2a9cbf6914eb8da5219616ff66233abd2099c533))
+
+
+### Documentation
+
+* credit the skill this project grew from ([4e9f1c4](https://github.com/corteshvictor/vhc-inversiones-acciones/commit/4e9f1c450d67005bc4356da1f20fd87a1854e844))
+* **evals:** correct the certification run count ([88e238f](https://github.com/corteshvictor/vhc-inversiones-acciones/commit/88e238f5c8b8b04b0500c899056fa8d34e4dfe64))
+* **readme:** date the observation about the capitalization floor ([8e4dd05](https://github.com/corteshvictor/vhc-inversiones-acciones/commit/8e4dd053359ddccf0f6503308f47c32141f57324))
+* **security:** state what this repository defends and what it does not ([56caca4](https://github.com/corteshvictor/vhc-inversiones-acciones/commit/56caca4e4f81b6363103ece06d957753798aef0e))
+
 ## [1.1.0](https://github.com/corteshvictor/vhc-inversiones-acciones/compare/v1.0.0...v1.1.0) (2026-08-25)
 
 
