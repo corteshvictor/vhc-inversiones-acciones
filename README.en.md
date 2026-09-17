@@ -549,11 +549,23 @@ Everything above is also inside the package: [`references/REFERENCE.md`](referen
 - Check recent, material claims against primary sources where possible.
 - Use this as an educational aid, never as a substitute for your own judgment or professional advice.
 
+## License
+
+[Apache 2.0](LICENSE). It allows using, modifying and redistributing the code,
+provided the licence and the attribution notices are kept and modified files are
+marked as such.
+
+It covers the code in this repository. The six models the classifier uses come
+from published work and belong to their authors; this licence says nothing about
+them.
+
 ## VHC Inversiones
 
 - [YouTube](https://www.youtube.com/@VHCInversiones)
 - [X](https://x.com/VHCInversiones)
 - [Instagram](https://www.instagram.com/vhcinversiones)
+
+Written by [Víctor Cortés](https://x.com/corteshvictor).
 
 ---
 
