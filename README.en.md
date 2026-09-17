@@ -439,6 +439,15 @@ The minimum covers the whole skill. On Haiku 4.5, one Deep Dive answer in three 
 self-made scores, probabilities and buy verdicts — so it is not recommended for anything here.
 Sonnet 5 is available on the free account.
 
+**On what is tested and what is not.** The code carries 214 automated tests at full coverage,
+on Linux, macOS and Windows: they establish that the classifier computes what it should and that
+the package rebuilds identically. What they do not establish is that a model obeys the skill's
+rules, since that is not something an automated test can check — it takes opening the chat and
+reading the answer. That manual matrix exists, under [`tests/evals/`](tests/evals/), and **the
+published version has not been through it**. The thresholds above come from running it against
+earlier versions. If you find an answer that departs from the method, open an issue: it is the
+most useful way to improve this.
+
 On ChatGPT the script needs `defusedxml`, `openpyxl` and `Pillow`, declared in the package's
 `requirements.txt`: the agent installs them itself when running Route A. If an analysis fails at
 startup, that is where to look.
