@@ -551,6 +551,15 @@ El mínimo vale para todo el skill. Con Haiku 4.5 una de cada tres respuestas de
 el método —puntajes propios, probabilidades y veredictos de compra—, así que no se recomienda para
 nada aquí. Sonnet 5 está disponible en la cuenta gratuita.
 
+**Sobre qué está probado y qué no.** El código lleva 214 pruebas automáticas con cobertura
+completa, en Linux, macOS y Windows: acreditan que el clasificador calcula lo que debe y que el
+paquete se reconstruye idéntico. Lo que no acreditan es que un modelo obedezca las reglas del
+skill, porque eso no se comprueba con una prueba automática sino abriendo el chat y mirando la
+respuesta. Esa matriz manual existe —está en [`tests/evals/`](tests/evals/)— y **la versión
+publicada no ha pasado por ella**. Los umbrales de arriba salen de haberla corrido sobre versiones
+anteriores. Si encuentras una respuesta que se salta el método, abre un issue: es la forma más
+útil de mejorar esto.
+
 En ChatGPT el script necesita `defusedxml`, `openpyxl` y `Pillow`, declaradas en el
 `requirements.txt` del paquete: las instala el propio agente al ejecutar la Ruta A. Si un análisis
 falla al arrancar, ahí es donde hay que mirar.

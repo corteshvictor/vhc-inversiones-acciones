@@ -9,6 +9,27 @@ actual. El estado vigente está en la tabla de alcance justo debajo y en las **C
 final. Si una ronda antigua y las conclusiones dicen cosas distintas, mandan las conclusiones — y
 esa diferencia es precisamente lo que el registro sirve para mostrar.
 
+## Estado de la versión publicada
+
+**El paquete que se distribuye hoy no está certificado por esta matriz.** Su SHA-256 es
+`9ccf202d35916e2ca0deebdda9032449fb34d93a966c1252f115205982236ae5` y no aparece en ninguna ronda
+de las que siguen: las ejecuciones registradas son de candidatos anteriores, previos a subir los
+límites del lector, a la herramienta de fusión y a los cambios en `references/REFERENCE.md`, que
+viaja dentro del ZIP.
+
+Esa decisión es deliberada, no un descuido. Certificar una sola superficie cuesta 46 ejecuciones
+manuales, y el proyecto se publica antes de pagar ese precio para que quien lo use encuentre los
+fallos que importan de verdad: los que aparecen con sus datos, en su plataforma y con su modelo.
+Los issues del repositorio son el canal.
+
+Lo que sí está probado es el código: 214 pruebas automáticas con cobertura completa de líneas y
+ramas, en Linux, macOS y Windows. Eso acredita que el clasificador calcula lo que debe y que el
+paquete se reconstruye idéntico. No acredita que un modelo obedezca las reglas del skill — para
+eso existe esta matriz, y por eso su estado se declara aquí en vez de dejarlo a la interpretación.
+
+Lo que siguen son las rondas ejecutadas hasta ahora. Valen como historia del método y como
+registro de los fallos que encontraron; no como certificación de la versión vigente.
+
 ## Alcance de certificación de la próxima versión
 
 Sin esta lista no hay respuesta objetiva a "¿está completa la matriz?". Certificar las nueve
