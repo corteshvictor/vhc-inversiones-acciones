@@ -68,6 +68,14 @@ Claude Code — the **Code** tab — does not inherit the skills loaded under Cu
 
 A PDF **never** produces a score or a category. Those always require the XLSX export and the canonical classifier.
 
+### Dashboard in action
+
+The dashboard lets you inspect each company's three gates, learn what an indicator measures, search by ticker or name, filter by category, and switch between Spanish and English.
+
+![VHC dashboard demo: summary, gates, indicators, search, filters, and language switching](assets/vhc-dashboard-demo.gif)
+
+Demo generated on September 16, 2026, from a sample InvestingPro export. The figures belong to that file: they are not updated market data or an investment recommendation. **Deep Dive means research it deeply, not buy.**
+
 ### What it does not do
 
 - It is not financial advice, nor a recommendation to buy, sell or hold.
