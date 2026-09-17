@@ -41,6 +41,14 @@ El skill reconoce tres flujos:
 
 El PDF **no** genera puntaje ni categoría cuantitativa. Para obtenerlos siempre se necesita el export XLSX y ejecutar el clasificador canónico.
 
+### Dashboard en acción
+
+El dashboard permite consultar los tres tribunales de cada empresa, ver qué mide un indicador, buscar por ticker o nombre, filtrar por categoría y cambiar entre español e inglés.
+
+![Demo del dashboard VHC: resumen, tribunales, indicadores, búsqueda, filtros y cambio de idioma](assets/vhc-dashboard-demo.gif)
+
+Demo generada el 16 de septiembre de 2026 a partir de un export de ejemplo de InvestingPro. Las cifras pertenecen a ese archivo: no son datos de mercado actualizados ni una recomendación de inversión. **Deep Dive significa investigar a fondo, no comprar.**
+
 ### Qué no hace
 
 - No constituye asesoría financiera ni una recomendación de comprar, vender o mantener.
