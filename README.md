@@ -26,6 +26,7 @@ La versión cuantitativa actual es **v1.0**. El clasificador reduce un universo 
 - [Archivos generados](#archivos-generados)
 - [Ejecución local](#ejecución-local)
 - [Solución de problemas](#solución-de-problemas)
+- [Licencia](#licencia)
 
 ## Qué hace el skill
 
@@ -779,11 +780,23 @@ La referencia técnica detallada está en [`references/REFERENCE.md`](references
 - Contrasta afirmaciones recientes y materiales con fuentes primarias cuando sea posible.
 - Usa la herramienta como apoyo educativo, nunca como sustituto de criterio propio o asesoría profesional.
 
+## Licencia
+
+[Apache 2.0](LICENSE). Permite usar, modificar y redistribuir el código
+conservando la licencia y los avisos de autoría, y declarando los archivos que se
+hayan modificado.
+
+Cubre el código de este repositorio. Los seis modelos que usa el clasificador
+proceden de trabajos publicados y son de sus autores; esta licencia no dice nada
+sobre ellos.
+
 ## VHC Inversiones
 
 - [YouTube](https://www.youtube.com/@VHCInversiones)
 - [X](https://x.com/VHCInversiones)
 - [Instagram](https://www.instagram.com/vhcinversiones)
+
+Lo escribe [Víctor Cortés](https://x.com/corteshvictor).
 
 ---
 
