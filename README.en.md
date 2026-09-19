@@ -106,7 +106,14 @@ Do **not** filter by sector. The screening sets financials and utilities aside o
 Export rules:
 
 - Use the InvestingPro interface **in English**; the canonical column names are the ones it produces.
-- Column order does not matter — the script resolves columns by header, never by position. Row order does, if you are merging several exports: keep them sorted by `Market Cap (Adjusted)` from largest down, which is how the screener writes them. The merge tool stops when it finds otherwise.
+- In InvestingPro, sort the screener by `Market Cap (Adjusted)` from largest to
+  smallest before exporting. This is required.
+- If InvestingPro still delivers a row out of order in the XLSX, nothing
+  breaks: `tools/merge_exports.py` tolerates one isolated rise or up to 1% of
+  adjacent comparisons, re-sorts everything and removes duplicates when
+  merging. Above that margin it stops and asks you to check the screener sort.
+  The classifier neither re-sorts nor removes duplicates.
+- Column order does not matter: the script finds columns by header.
 - Do not rename or translate the headers after exporting.
 - Export with **Export → Excel** and attach the file in the same message where you ask for the screening.
 - InvestingPro caps each export at 1,000 rows, ordered by market capitalization. To analyze more companies, combine several exports into one sheet under a single header row: the classifier accepts up to 10,000 rows and 10 MiB.
@@ -159,8 +166,10 @@ arrived from someone else — the skill is what inspects before opening.
 When a slice returns fewer than 1,000 rows the tool says so, and the universe is
 complete.
 
-The tool orders the slices by capitalization, checks every boundary, drops the
-duplicates and writes one sheet under a single header row. It ends with
+The tool first checks that each export preserves, apart from isolated
+misplacements, the descending order selected in InvestingPro. It then orders
+the slices and every company by capitalization, checks every boundary, drops
+the duplicates and writes one sheet under a single header row. It ends with
 `Sin huecos` when everything lines up. When an overlap is missing it names the
 range that was lost and gives the exact filter that recovers it, both for the
 web and for the API.

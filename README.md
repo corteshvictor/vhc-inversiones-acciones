@@ -218,7 +218,14 @@ No filtres por sector. El propio screening aparta financieras y utilities sin pe
 
 - Usa InvestingPro en **inglés**.
 - Agrega las columnas con el botón `+` y conserva exactamente sus nombres.
-- El orden de las columnas no importa: el programa las busca por encabezado. El de las filas sí, si vas a fusionar varias tandas — consérvalas ordenadas por `Market Cap (Adjusted)` de mayor a menor, que es como salen del screener. La herramienta se detiene si encuentra lo contrario.
+- En InvestingPro, ordena el screener por `Market Cap (Adjusted)` de mayor a
+  menor antes de exportar. Es obligatorio.
+- Si aun así InvestingPro entrega alguna fila fuera de orden en el XLSX, no
+  pasa nada: `tools/merge_exports.py` tolera una subida aislada o hasta el 1 %
+  de los pares consecutivos, reordena todo y elimina los duplicados al
+  fusionar. Si supera ese margen, se detiene y pide revisar el orden del
+  screener. El clasificador no reordena ni elimina duplicados.
+- El orden de las columnas no importa: el programa las busca por encabezado.
 - No edites ni traduzcas los encabezados después de exportar.
 - Exporta a Excel con **Export → Excel**.
 - Cada export tiene un límite de 1.000 filas y normalmente queda ordenado por capitalización bursátil. Para analizar más empresas, combina varios exports en una sola hoja bajo una única fila de encabezados: el clasificador acepta hasta 10.000 filas y 10 MiB.
@@ -275,8 +282,10 @@ está el skill, que sí inspecciona antes de abrir.
 Cuando una tanda traiga menos de 1.000 filas, el programa lo dice y el universo
 está completo.
 
-La herramienta ordena las tandas por capitalización, revisa frontera por
-frontera, elimina los duplicados y escribe una hoja única con una sola fila de
+La herramienta comprueba primero que cada export conserva, salvo desajustes
+aislados, el orden descendente elegido en InvestingPro. Después ordena las
+tandas y todas las empresas por capitalización, revisa frontera por frontera,
+elimina los duplicados y escribe una hoja única con una sola fila de
 encabezados. Termina con `Sin huecos` cuando todo encaja. Si falta un solape,
 nombra el tramo perdido y da el filtro exacto para recuperarlo, tanto para la
 web como para la API.
