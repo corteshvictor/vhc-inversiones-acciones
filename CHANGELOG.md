@@ -20,6 +20,18 @@ threshold, a lens, a gate or the score itself changes.
 
 <!-- release-please will insert released versions below this line. -->
 
+## [1.1.3](https://github.com/corteshvictor/vhc-inversiones-acciones/compare/v1.1.2...v1.1.3) (2026-09-19)
+
+
+### Bug Fixes
+
+* **tools:** accept an export with a row out of place ([360d08e](https://github.com/corteshvictor/vhc-inversiones-acciones/commit/360d08e859442eb553ad66fc532f524e37db6247))
+
+
+### Documentation
+
+* **readme:** require the capitalization sort and state its tolerance ([bf69434](https://github.com/corteshvictor/vhc-inversiones-acciones/commit/bf69434361c25ecfe15a435acca6c56c4b904037))
+
 ## [1.1.2](https://github.com/corteshvictor/vhc-inversiones-acciones/compare/v1.1.1...v1.1.2) (2026-09-17)
 
 
