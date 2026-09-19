@@ -165,6 +165,23 @@ def test_merge_keeps_the_first_appearance_of_every_ticker(tmp_path):
     assert repeated == ["PTCT"]
 
 
+def test_merge_sorts_the_final_rows_by_capitalization(tmp_path):
+    caps = [float(value) * 1e6 for value in range(102, 0, -1)]
+    caps[50], caps[51] = caps[51], caps[50]
+    tickers = [f"T{value}" for value in range(102, 0, -1)]
+    path = _slice(
+        tmp_path,
+        "a.xlsx",
+        [*tickers, "NONE"],
+        [*caps, None],
+    )
+
+    _, rows, _ = merge([read_batch(str(path))])
+
+    assert [row[2] for row in rows[:-1]] == sorted(caps, reverse=True)
+    assert rows[-1][1:] == ["NONE", None]
+
+
 def test_merge_keeps_rows_that_carry_no_ticker(tmp_path):
     path = _export(tmp_path / "a.xlsx", [("Sin ticker", None, 1e9)])
     _, rows, repeated = merge([read_batch(str(path))])
@@ -298,6 +315,8 @@ def test_an_empty_batch_reports_zero_rather_than_raising():
     )
     assert batch.top == 0.0
     assert batch.bottom == 0.0
+    assert batch.top_ticker == ""
+    assert batch.bottom_ticker == ""
 
 
 def test_the_tool_runs_as_a_command(project_root, tmp_path, capsys):
@@ -459,23 +478,20 @@ def test_any_header_other_than_full_ticker_stops_the_read(tmp_path, repeated):
     assert f"repite la columna '{repeated}'" in str(failure.value)
 
 
-@pytest.mark.parametrize(
-    ("rows", "edge"),
-    [
-        ([("Primera", "AAA", None), ("Fin", "ZZZ", 1e9)], "primera"),
-        ([("Uno", "AAA", 5e12), ("Ultima", "ZZZ", None)], "última"),
-    ],
-)
-def test_an_edge_without_capitalization_stops_the_read(tmp_path, rows, edge):
-    """The first row places the batch among the others and the last one yields
-    the next filter. A blank at either end pairs one company's ticker with
-    another company's number, and the boundary announced never existed."""
+def test_blank_capitalizations_at_the_edges_do_not_define_the_range(tmp_path, capsys):
+    rows = [
+        ("Sin capitalización", "NONE1", None),
+        ("Mayor", "TOP", 5e12),
+        ("Menor", "LOW", 1e9),
+        ("Otra sin capitalización", "NONE2", None),
+    ]
     path = _export(tmp_path / "a.xlsx", rows)
 
-    with pytest.raises(SystemExit) as failure:
-        read_batch(str(path))
+    batch = read_batch(str(path))
 
-    assert f"la {edge} empresa" in str(failure.value)
+    assert batch.top_ticker == "TOP"
+    assert batch.bottom_ticker == "LOW"
+    assert "2 filas sin" in capsys.readouterr().out
 
 
 def test_a_gap_in_the_middle_is_kept_and_only_reported(tmp_path, capsys):
@@ -532,49 +548,113 @@ def test_a_row_shorter_than_the_header_yields_blanks_not_an_error():
     assert rows == [["Nvidia", "NVDA", None]]
 
 
-@pytest.mark.parametrize(
-    ("caps", "accepted"),
-    [
-        ([500e6, 300e6, 100e6], True),
-        ([500e6, None, 100e6], True),  # an interior gap is already tolerated
-        ([500e6, 500e6, 100e6], True),  # ties are an order, not a break
-        ([500e6, 100e6, 300e6], False),
-    ],
-    ids=["descending", "interior-gap", "ties", "rises-again"],
-)
-def test_a_batch_must_run_from_the_largest_capitalization_down(
-    tmp_path, capsys, caps, accepted
-):
-    """Everything reported about a batch reads its edges: the first row places
-    it among the others, the last yields the next filter. Sorted any other way,
-    one company's ticker is announced with another company's number."""
+def test_an_isolated_row_out_of_order_is_tolerated_and_sorted(tmp_path, capsys):
+    """A real export arrives with rows out of order. In one downloaded on 18
+    September 2026, the slice from 289.84 M down, row 117 holds CAVG
+    (254.46 M) right after AMDO.F (252.60 M). An earlier rule refused any batch
+    that rose between neighbors, so that single row threw the whole file away.
+    The tool tolerates isolated export noise and sorts it instead; the edges
+    come from the values, not the positions."""
+    caps = [float(value) * 1e6 for value in range(1_000, 0, -1)]
+    caps[115], caps[116] = caps[116], caps[115]
     rows = [(f"Empresa {i}", f"T{i}", cap) for i, cap in enumerate(caps)]
     path = _export(tmp_path / "a.xlsx", rows)
 
-    if accepted:
-        assert len(read_batch(str(path)).rows) == len(caps)
-        capsys.readouterr()
-        return
+    batch = read_batch(str(path))
 
-    with pytest.raises(SystemExit) as failure:
+    assert len(batch.rows) == len(caps)
+    assert batch.top == 1_000e6
+    assert batch.bottom == 1e6
+    assert batch.top_ticker == "T0"
+    assert batch.bottom_ticker == "T999"
+    assert "1 de 999 pares consecutivos sube" in capsys.readouterr().out
+
+
+def _descending_with_rises(size, rises):
+    """Capitalizations from `size` million down, with `rises` adjacent swaps.
+
+    The swaps sit ten rows apart, so each one adds exactly one rise and no two
+    of them touch.
+    """
+    caps = [float(value) * 1e6 for value in range(size, 0, -1)]
+    for at in range(0, 10 * rises, 10):
+        caps[at], caps[at + 1] = caps[at + 1], caps[at]
+    return caps
+
+
+@pytest.mark.parametrize(
+    ("size", "rises"),
+    [
+        (1_000, 9),  # 9 of 999 comparisons, 0.90%: inside the 1%
+        (3, 1),  # 1 of 2, 50%: a single rise passes whatever the ratio
+    ],
+    ids=["nine-rises-in-a-full-slice", "one-rise-in-a-small-file"],
+)
+def test_the_tolerance_accepts_up_to_its_limit(tmp_path, capsys, size, rises):
+    caps = _descending_with_rises(size, rises)
+    path = _slice(tmp_path, "a.xlsx", [f"T{i}" for i in range(size)], caps)
+
+    batch = read_batch(str(path))
+
+    assert len(batch.rows) == size
+    assert f"{rises} de {size - 1} pares consecutivos" in capsys.readouterr().out
+
+
+def test_the_tolerance_refuses_one_rise_beyond_its_limit(tmp_path):
+    """Ten rises in a full slice are 10 of 999, just over 1%. Together with the
+    nine accepted above, this pins the threshold itself: raising it, or
+    dropping the single-rise allowance, makes one of these tests fail."""
+    caps = _descending_with_rises(1_000, 10)
+    path = _slice(tmp_path, "a.xlsx", [f"T{i}" for i in range(1_000)], caps)
+
+    with pytest.raises(SystemExit) as stopped:
         read_batch(str(path))
-    assert "no está ordenado de mayor a menor" in str(failure.value)
+
+    message = str(stopped.value)
+    assert "10 de 999 pares consecutivos suben" in message
+    assert "hasta el 1%" in message
 
 
-def test_an_unordered_batch_is_refused_rather_than_sorted(tmp_path):
-    """Sorting would hide the cause — a screener exported without the
-    capitalization descending — and the next download would repeat it."""
-    path = _export(
-        tmp_path / "a.xlsx",
-        [("Top", "TOP", 500e6), ("Low", "LOW", 100e6), ("Last", "LAST", 300e6)],
+def test_equal_capitalizations_side_by_side_are_not_a_rise(tmp_path, capsys):
+    """Ties are an order, not a break. The exports of 18 September 2026 carry
+    them: PTOR and CAII both stand at exactly 338,552,368. Counted as rises,
+    every tie would eat into the tolerance meant for rows out of place."""
+    path = _slice(
+        tmp_path,
+        "a.xlsx",
+        ["TOP", "PTOR", "CAII", "LOW"],
+        [500e6, 338_552_368, 338_552_368, 100e6],
     )
 
-    with pytest.raises(SystemExit) as failure:
+    read_batch(str(path))
+
+    assert "pares consecutivos" not in capsys.readouterr().out
+
+
+def test_an_export_clearly_not_sorted_by_market_cap_stops_the_read(tmp_path):
+    caps = [float(value) * 1e6 for value in range(1, 101)]
+    path = _slice(
+        tmp_path,
+        "sorted-by-another-column.xlsx",
+        [f"T{value}" for value in range(1, 101)],
+        caps,
+    )
+
+    with pytest.raises(SystemExit) as stopped:
         read_batch(str(path))
 
-    # The message names both companies, so the export can be found and redone.
-    assert "LAST" in str(failure.value)
-    assert "LOW" in str(failure.value)
+    message = str(stopped.value)
+    assert "no conserva el orden descendente" in message
+    assert "99 de 99 pares consecutivos suben" in message
+    assert "InvestingPro" in message
+    assert "de mayor a menor" in message
+
+
+def test_an_export_with_no_numeric_capitalizations_stops_the_read(tmp_path):
+    path = _export(tmp_path / "a.xlsx", [("Uno", "AAA", None)])
+
+    with pytest.raises(SystemExit, match="ningún valor numérico"):
+        read_batch(str(path))
 
 
 def test_two_companies_sharing_a_ticker_both_survive(tmp_path):

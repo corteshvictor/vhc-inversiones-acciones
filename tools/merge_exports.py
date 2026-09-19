@@ -49,6 +49,12 @@ MILLION = 1_000_000
 # tests/test_merge_exports.py keeps this equal to io.MAX_WORKSHEET_ROWS.
 CLASSIFIER_ROW_LIMIT = 10_000
 
+# InvestingPro can move an isolated row in an otherwise correctly sorted XLSX.
+# Accept that export noise, but reject a file that looks sorted by another
+# column: with a 1,000-row slice, 1% still permits several isolated movements
+# while a different sort produces hundreds of upward jumps.
+MAX_OUT_OF_ORDER_RATIO = 0.01
+
 
 def _text(value: object) -> str:
     """Collapses the whitespace and line breaks a cell may carry."""
@@ -87,6 +93,27 @@ class Batch:
     @property
     def bottom(self) -> float:
         return min(self.caps, default=0.0)
+
+    def _ticker_at_capitalization(self, *, highest: bool) -> str:
+        cap_at = self.columns.get(MARKET_CAP)
+        ticker_at = self.columns.get(TICKER)
+        pairs = [
+            (value, _text(_cell(row, ticker_at)))
+            for row in self.rows
+            if (value := _number(_cell(row, cap_at))) is not None
+        ]
+        if not pairs:
+            return ""
+        pick = max if highest else min
+        return pick(pairs, key=lambda item: item[0])[1]
+
+    @property
+    def top_ticker(self) -> str:
+        return self._ticker_at_capitalization(highest=True)
+
+    @property
+    def bottom_ticker(self) -> str:
+        return self._ticker_at_capitalization(highest=False)
 
 
 @dataclass(frozen=True)
@@ -154,64 +181,6 @@ def _cell(row: list[object], index: int | None) -> object:
     return row[index]
 
 
-def _require_boundary_capitalizations(
-    data: list[list[object]], name_at: int, cap_at: int, path: str
-) -> None:
-    """The first and last companies decide the order and the next filter.
-
-    A gap in the middle is harmless: capitalization is optional for the method,
-    and those rows merge like any other. The edges are not. The batch is placed
-    among the others by its first row and the next filter is computed from its
-    last, so a missing value there pairs one company's ticker with another
-    company's number — and the tool would announce a boundary that never existed.
-    """
-    if not data:
-        raise SystemExit(f"ERROR: {os.path.basename(path)} no trae ninguna empresa")
-    for row, edge in ((data[0], "primera"), (data[-1], "última")):
-        if _number(_cell(row, cap_at)) is not None:
-            continue
-        company = _text(_cell(row, name_at))
-        raise SystemExit(
-            f"ERROR: la {edge} empresa de {os.path.basename(path)} — {company} — "
-            f"no trae '{MARKET_CAP}'. Ese valor sitúa la tanda entre las demás y "
-            "calcula el filtro siguiente, así que sin él la frontera que se "
-            "anuncie sería de otra empresa."
-        )
-
-
-def _require_descending_order(
-    data: list[list[object]], ticker_at: int, cap_at: int, path: str
-) -> None:
-    """The export must run from the largest capitalization down.
-
-    Everything the tool reports about a batch reads its edges: the first row
-    places it among the others, the last one yields the next filter. Both are
-    read as tickers while the figures come from the whole column, so a sheet
-    sorted any other way pairs one company's name with another's number and
-    announces a boundary that never existed.
-
-    Refused rather than re-sorted. Sorting would hide the real cause — a screener
-    exported without `Market Cap (Adjusted)` descending — and the next download
-    would repeat it.
-    """
-    previous_value: float | None = None
-    previous_ticker = ""
-    for index, row in enumerate(data, 1):
-        value = _number(_cell(row, cap_at))
-        if value is None:  # An interior gap, already reported elsewhere.
-            continue
-        if previous_value is not None and value > previous_value:
-            ticker = _text(_cell(row, ticker_at))
-            raise SystemExit(
-                f"ERROR: {os.path.basename(path)} no está ordenado de mayor a "
-                f"menor capitalización: {ticker} ({value / MILLION:,.2f} M) en "
-                f"la fila {index} supera a {previous_ticker} "
-                f"({previous_value / MILLION:,.2f} M), que va antes. Vuelve a "
-                f"exportar ordenando por '{MARKET_CAP}' de forma descendente."
-            )
-        previous_value, previous_ticker = value, _text(_cell(row, ticker_at))
-
-
 def _check_repeated_headers(header_row: list[object], path: str) -> None:
     """Only `Full Ticker` may appear twice; anything else is a silent swap."""
     seen: dict[str, list[int]] = {}
@@ -249,6 +218,74 @@ def _check_repeated_headers(header_row: list[object], path: str) -> None:
         )
 
 
+def _capitalization_points(
+    rows: list[list[object]], ticker_at: int, cap_at: int
+) -> list[tuple[str, float]]:
+    """Returns the comparable ticker and capitalization from every numeric row."""
+    points: list[tuple[str, float]] = []
+    for row in rows:
+        cap = _number(_cell(row, cap_at))
+        if cap is None:
+            continue
+        ticker = _text(_cell(row, ticker_at)) or "(sin ticker)"
+        points.append((ticker, cap))
+    return points
+
+
+def _ascending_transitions(
+    points: list[tuple[str, float]],
+) -> list[tuple[str, float, str, float]]:
+    """Returns every adjacent pair whose capitalization rises."""
+    return [
+        (*before, *after)
+        for before, after in itertools.pairwise(points)
+        if after[1] > before[1]
+    ]
+
+
+def _require_predominantly_descending(
+    rows: list[list[object]], ticker_at: int, cap_at: int, path: str
+) -> None:
+    """Rejects exports that were not sorted by market capitalization.
+
+    A genuine export has shown an isolated adjacent rise, so exact monotonicity
+    is too strict. One rise is always tolerated; in larger files, up to 1% of
+    comparable adjacent rows may rise. The merge still sorts every accepted row
+    globally before writing the output.
+    """
+    points = _capitalization_points(rows, ticker_at, cap_at)
+    comparisons = max(len(points) - 1, 0)
+    rises = _ascending_transitions(points)
+
+    if not rises:
+        return
+
+    rise_count = len(rises)
+    ratio = rise_count / comparisons
+    name = os.path.basename(path)
+    if rise_count == 1 or ratio <= MAX_OUT_OF_ORDER_RATIO:
+        verb = "sube" if rise_count == 1 else "suben"
+        print(
+            f"  aviso: en {name}, {rise_count} de {comparisons} pares consecutivos "
+            f"{verb} en '{MARKET_CAP}'; está dentro de la tolerancia y se "
+            "reordena al fusionar"
+        )
+        return
+
+    before_ticker, before_cap, after_ticker, after_cap = rises[0]
+    raise SystemExit(
+        f"ERROR: {name} no conserva el orden descendente requerido por "
+        f"'{MARKET_CAP}': {rise_count} de {comparisons} pares consecutivos suben "
+        f"({ratio:.2%}). El primero es {before_ticker} "
+        f"({before_cap / MILLION:,.2f} M) -> {after_ticker} "
+        f"({after_cap / MILLION:,.2f} M). Antes de exportar, ordena el "
+        f"screener de InvestingPro por '{MARKET_CAP}' de mayor a menor. La "
+        "herramienta tolera una subida aislada o hasta el "
+        f"{MAX_OUT_OF_ORDER_RATIO:.0%} porque el XLSX oficial puede mover alguna "
+        "fila, pero este archivo supera ese margen."
+    )
+
+
 def read_batch(path: str) -> Batch:
     """Reads one export and pulls out its tickers and capitalizations."""
     rows = _read_sheet(path)
@@ -279,9 +316,16 @@ def read_batch(path: str) -> Batch:
             caps.append(capitalization)
 
     header = [_text(cell) for cell in rows[header_at]]
-    _require_boundary_capitalizations(data, name_at, cap_at, path)
-    _require_descending_order(data, ticker_at, cap_at, path)
-    if data and len(caps) < len(data):
+    if not data:
+        raise SystemExit(f"ERROR: {os.path.basename(path)} no trae ninguna empresa")
+    if not caps:
+        raise SystemExit(
+            f"ERROR: {os.path.basename(path)} no trae ningún valor numérico en "
+            f"'{MARKET_CAP}'. Sin ellos no se pueden ordenar las tandas ni "
+            "calcular el filtro siguiente."
+        )
+    _require_predominantly_descending(data, ticker_at, cap_at, path)
+    if len(caps) < len(data):
         # Harmless for the classification — the method treats capitalization as
         # optional — but these rows sit outside the top and bottom that order
         # the batches, so the reader should know they are there.
@@ -369,6 +413,13 @@ def merge(batches: list[Batch]) -> tuple[list[str], list[list[object]], list[str
                 continue
             seen.add(identity)
             merged.append([_cell(row, batch.columns.get(name)) for name in canonical])
+    cap_at = canonical.index(MARKET_CAP)
+
+    def capitalization(row: list[object]) -> tuple[bool, float]:
+        value = _number(_cell(row, cap_at))
+        return value is not None, value if value is not None else 0.0
+
+    merged.sort(key=capitalization, reverse=True)
     return canonical, merged, repeated
 
 
@@ -388,12 +439,10 @@ def write_sheet(header: list[str], rows: list[list[object]], output: str) -> Non
 def _print_batches(batches: list[Batch]) -> None:
     print("== TANDAS, ordenadas por capitalización ==")
     for batch in batches:
-        first = batch.tickers[0] if batch.tickers else ""
-        last = batch.tickers[-1] if batch.tickers else ""
         print(
             f"  {len(batch.rows):>5,} filas · "
             f"{batch.top / MILLION:>14,.2f} M -> {batch.bottom / MILLION:>12,.2f} M · "
-            f"{first:>6} .. {last:<6} · {batch.name}"
+            f"{batch.top_ticker:>6} .. {batch.bottom_ticker:<6} · {batch.name}"
         )
 
 
@@ -439,7 +488,7 @@ def _print_next_step(batches: list[Batch], rows_per_export: int = 1000) -> None:
     following = math.ceil(smallest.bottom / MILLION * 100) / 100
     print(
         f"\n== SIGUIENTE TANDA ==\n"
-        f"  La última descargada acaba en {smallest.tickers[-1]}, "
+        f"  La última descargada acaba en {smallest.bottom_ticker}, "
         f"{smallest.bottom / MILLION:,.2f} M. Para la siguiente:\n"
         f"      Market Cap (Adjusted) · less than or equal to · "
         f"{following} · million\n"
