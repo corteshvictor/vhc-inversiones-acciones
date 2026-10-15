@@ -11,6 +11,7 @@ PACKAGE_NAME = "vhc-inversiones-acciones"
 DEFAULT_OUTPUT = PROJECT_ROOT / f"{PACKAGE_NAME}.zip"
 FIXED_TIMESTAMP = (2026, 1, 1, 0, 0, 0)
 PACKAGE_FILES = (
+    Path("LICENSE"),
     Path("SKILL.md"),
     Path("requirements.txt"),
     Path("requirements.lock"),
