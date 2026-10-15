@@ -159,17 +159,19 @@ La aplicación de escritorio puede no ofrecer **Subir una habilidad**. En ese ca
 En el mismo formulario usa:
 
 ```text
-Origen: git@github.com:corteshvictor/vhc-inversiones-acciones.git
+Origen: https://github.com/corteshvictor/vhc-inversiones-acciones.git
 Referencia de Git: main
 Rutas dispersas: dejar vacío
 ```
 
-El repositorio es privado actualmente, por lo que la aplicación debe poder autenticarse con tu clave SSH. Si no puede acceder, usa temporalmente la carpeta local. Agregar el marketplace solo registra el catálogo: después debes abrir **Explorar directorio** e instalar el plugin.
+El repositorio es público, así que la aplicación puede descargarlo mediante esa
+URL sin configurar una clave SSH. Agregar el marketplace solo registra el
+catálogo: después debes abrir **Explorar directorio** e instalar el plugin.
 
 En Codex CLI también puedes registrar el marketplace:
 
 ```bash
-codex plugin marketplace add git@github.com:corteshvictor/vhc-inversiones-acciones.git --ref main
+codex plugin marketplace add https://github.com/corteshvictor/vhc-inversiones-acciones.git --ref main
 ```
 
 Después abre `/plugins`, selecciona el marketplace **VHC Inversiones**, instala el plugin e inicia una sesión nueva. La extensión IDE de Codex no instala plugins desde el directorio; en ella conserva la instalación manual del skill descrita a continuación.
