@@ -20,6 +20,13 @@ threshold, a lens, a gate or the score itself changes.
 
 <!-- release-please will insert released versions below this line. -->
 
+## [1.1.4](https://github.com/corteshvictor/vhc-inversiones-acciones/compare/v1.1.3...v1.1.4) (2026-10-15)
+
+
+### Documentation
+
+* **readme:** use HTTPS for public marketplace setup ([e3bd26b](https://github.com/corteshvictor/vhc-inversiones-acciones/commit/e3bd26bc86a7b0e6ca37ce738b375e93068a8ba3))
+
 ## [1.1.3](https://github.com/corteshvictor/vhc-inversiones-acciones/compare/v1.1.2...v1.1.3) (2026-09-19)
 
 
