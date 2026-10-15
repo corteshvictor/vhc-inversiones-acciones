@@ -381,7 +381,7 @@ Install it only if you trust its origin: it carries instructions, Python code, d
 3. Under **Source**, either the repository root on disk, for example `/path/to/vhc-inversiones-acciones`, or the repository itself:
 
    ```text
-   Source:      git@github.com:corteshvictor/vhc-inversiones-acciones.git
+   Source:      https://github.com/corteshvictor/vhc-inversiones-acciones.git
    Git ref:     main
    Sparse paths: leave empty
    ```
@@ -390,12 +390,14 @@ Install it only if you trust its origin: it carries instructions, Python code, d
 5. Open **Explore directory**, select **VHC Inversiones** and install **VHC Inversiones — Acciones** with `+`.
 6. Start a new chat before testing an XLSX or a PDF.
 
-Adding the marketplace only registers the catalog — the plugin still has to be installed from the directory. While the repository is private, the app has to authenticate with your SSH key; if it cannot, point at the local folder instead.
+The repository is public, so the app can download it from that URL without an
+SSH key. Adding the marketplace only registers the catalog — the plugin still
+has to be installed from the directory.
 
 In the Codex CLI:
 
 ```bash
-codex plugin marketplace add git@github.com:corteshvictor/vhc-inversiones-acciones.git --ref main
+codex plugin marketplace add https://github.com/corteshvictor/vhc-inversiones-acciones.git --ref main
 ```
 
 Then open `/plugins`, pick the **VHC Inversiones** marketplace, install the plugin and start a new session. The Codex IDE extension does not install plugins from the directory; there, keep the manual skill install below.
