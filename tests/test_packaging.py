@@ -38,6 +38,16 @@ def test_distributable_zip_matches_the_sources(project_root, tmp_path):
     assert _sha256(distributed) == _sha256(generated)
 
 
+def test_zip_includes_the_repository_license(project_root, tmp_path):
+    generated = build_skill.build_skill(tmp_path / "skill.zip", project_root)
+
+    with ZipFile(generated) as archive:
+        assert (
+            archive.read(f"{build_skill.PACKAGE_NAME}/LICENSE")
+            == (project_root / "LICENSE").read_bytes()
+        )
+
+
 def test_zip_fails_when_a_required_file_is_missing(tmp_path):
     with pytest.raises(FileNotFoundError, match="Faltan archivos obligatorios"):
         build_skill.build_skill(tmp_path / "skill.zip", tmp_path / "raiz-vacia")
