@@ -4,4 +4,4 @@ pyyaml==6.0.3
 pytest-cov==7.1.0
 pip-tools==7.6.2
 pyright==1.1.414
-ruff==0.17.0
+ruff==0.17.1
