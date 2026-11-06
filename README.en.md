@@ -517,6 +517,11 @@ Timestamps include seconds and a collision suffix, so two runs never overwrite e
 
 Installing the skill in Claude or ChatGPT uses that platform's sandbox. These steps are only for running or developing the project on your own machine.
 
+Runtime versions are pinned for reproducibility:
+
+- `openpyxl==3.1.5`
+- `pillow==13.0.0`
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate

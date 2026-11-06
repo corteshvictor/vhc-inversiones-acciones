@@ -738,7 +738,7 @@ reciente de la serie 3.12 y crea `.venv` después de seleccionar ese intérprete
 Las versiones están fijadas para reproducibilidad:
 
 - `openpyxl==3.1.5`
-- `pillow==12.3.0`
+- `pillow==13.0.0`
 
 ### macOS o Linux
 
