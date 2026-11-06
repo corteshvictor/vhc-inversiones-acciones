@@ -20,6 +20,19 @@ threshold, a lens, a gate or the score itself changes.
 
 <!-- release-please will insert released versions below this line. -->
 
+## [1.1.6](https://github.com/corteshvictor/vhc-inversiones-acciones/compare/v1.1.5...v1.1.6) (2026-11-06)
+
+
+### Bug Fixes
+
+* **deps:** update Pillow and synchronize distributions ([a84177c](https://github.com/corteshvictor/vhc-inversiones-acciones/commit/a84177c12881ef52d5ef5630fde794e8e60cbd30))
+
+
+### Documentation
+
+* **screening:** clarify market cap requirements for batch exports ([62aa9d3](https://github.com/corteshvictor/vhc-inversiones-acciones/commit/62aa9d33e7866e28c4e14cdd9794b5b4474f5af2))
+* **screening:** preserve screener criteria for the first export ([172bdb5](https://github.com/corteshvictor/vhc-inversiones-acciones/commit/172bdb568b5bbe6562fabe37d6db3c53555c2848))
+
 ## [1.1.5](https://github.com/corteshvictor/vhc-inversiones-acciones/compare/v1.1.4...v1.1.5) (2026-10-15)
 
 
