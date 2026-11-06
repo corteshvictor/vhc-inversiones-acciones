@@ -86,7 +86,7 @@ Si el agente no activa el skill automáticamente:
 El proyecto ofrece dos distribuciones construidas desde las mismas fuentes:
 
 - [`vhc-inversiones-acciones.zip`](vhc-inversiones-acciones.zip), para cargar el skill en Claude, ChatGPT web o instalarlo manualmente en Codex.
-- El marketplace incluido en `.agents/plugins/marketplace.json`, para instalarlo como plugin en ChatGPT Desktop y Codex.
+- Los marketplaces incluidos en el repositorio, para instalarlo como plugin: `.agents/plugins/marketplace.json` en ChatGPT Desktop y Codex, y `.claude-plugin/marketplace.json` en Claude.
 
 Instálalo únicamente si confías en su procedencia: contiene instrucciones, código Python, dependencias declaradas y recursos de marca.
 
@@ -117,6 +117,41 @@ Instálalo únicamente si confías en su procedencia: contiene instrucciones, c�
 En cuentas Team o Enterprise, estas capacidades pueden necesitar la habilitación previa de un administrador.
 
 La ruta oficial puede cambiar con la interfaz; consulta la [guía de Skills de Claude](https://support.claude.com/es/articles/12512180-usar-habilidades-en-claude) si no encuentras alguna opción.
+
+### Claude como plugin
+
+El plugin evita volver a subir el ZIP en cada versión. Hay dos vías, y lo que instalas en una no aparece en la otra: la primera queda en tu cuenta y la segunda solo en ese equipo. Requiere un plan de pago, y agregar el marketplace solo registra el catálogo: el plugin hay que instalarlo aparte.
+
+Si antes cargaste el ZIP, desactiva esa habilidad para no tener dos copias del mismo skill.
+
+#### Desde Personalizar, para Chat, Cowork y Claude Code
+
+1. Abre **Personalizar → Plugins → Agregar → Agregar marketplace**.
+2. En **URL** escribe `corteshvictor/vhc-inversiones-acciones`.
+3. Deja activado **Sincronizar automáticamente** si quieres recibir los cambios sin hacer nada. Si lo apagas, tendrás que buscar las actualizaciones desde el marketplace.
+4. Pulsa **Sincronizar** e instala **VHC Inversiones — Acciones**.
+5. Comprueba que esté activada la ejecución de código, igual que con el ZIP, e inicia una conversación nueva antes de probar el XLSX o PDF.
+
+Claude Code lo descarga como plugin sincronizado al iniciar sesión con la misma cuenta, desde la versión 2.1.273. La sincronización sigue al repositorio de GitHub: la documentación no aclara si un cambio en `main` llega antes de que se publique una versión.
+
+#### Desde Claude Code
+
+```bash
+claude plugin marketplace add corteshvictor/vhc-inversiones-acciones
+claude plugin install vhc-inversiones-acciones@vhc-inversiones
+```
+
+El skill aparece como `/vhc-inversiones-acciones:vhc-inversiones-acciones`, y nombrarlo en el mensaje también funciona.
+
+Aquí las versiones nuevas llegan con cada release, porque Claude Code se queda en la versión de `plugin.json` hasta que cambia. **La actualización automática viene desactivada** en marketplaces de terceros: actívala en `/plugin` → **Marketplaces** → **Enable auto-update**, o actualiza a mano:
+
+```bash
+claude plugin update vhc-inversiones-acciones@vhc-inversiones
+```
+
+Para probar una copia local antes de publicar, pasa la carpeta raíz del repositorio en lugar de `corteshvictor/vhc-inversiones-acciones`. Claude Code la lee en el sitio, sin copiarla, así que tus cambios se aplican en la siguiente sesión sin cambiar la versión.
+
+Ambas vías son **instalación documentada, comportamiento no certificado**: todavía no se ha ejecutado la matriz de evaluación sobre ellas. El skill sigue necesitando Python y sus dependencias en el entorno donde corre. Si no consigues ejecutarlo así, usa el ZIP.
 
 ### ChatGPT desde la web
 
@@ -694,7 +729,7 @@ Cómo seleccionarlo antes de escribir, según dónde estés. En todos los casos 
 
 Esa tabla sale de probarlo en las apps de macOS. Fuera de ellas valen las formas documentadas: `@vhc-inversiones-acciones` en ChatGPT web y `$vhc-inversiones-acciones` en Codex CLI. **Nombrarlo en el mensaje funciona en todas, siempre que el skill esté instalado y activado**: «Usa el skill `vhc-inversiones-acciones`…». Si la interfaz cambia y el selector deja de aparecer, esa es la vía que no falla.
 
-Y un aviso que ahorra un rato de confusión: la pestaña **Code** es Claude Code, que **no hereda** las habilidades cargadas en Personalizar. El ZIP hay que descomprimirlo también en su propia carpeta.
+Y un aviso que ahorra un rato de confusión: la pestaña **Code** es Claude Code, que **no hereda** las habilidades cargadas en Personalizar. Instálalo ahí como [plugin](#claude-como-plugin) o descomprime el ZIP también en su propia carpeta.
 
 ```bash
 mkdir -p ~/.claude/skills
@@ -787,6 +822,8 @@ No renombres ni muevas solo `screening_acciones.py`; necesita el paquete `script
 | Falta `sectores_excluidos.csv` | Se copió el script sin el resto del skill | Restaura la estructura completa; la ejecución se detiene por seguridad |
 | No se generan archivos | El agente no tiene ejecución de código o escritura habilitada | Habilita esas capacidades o ejecuta localmente |
 | Claude no activa el skill | Está deshabilitado o la solicitud es ambigua | Actívalo en **Personalizar → Habilidades** o **Customize → Skills** y nómbralo explícitamente en el prompt |
+| Claude no acepta el repositorio como marketplace | La referencia agregada no contiene `.claude-plugin/marketplace.json` | Comprueba que el archivo exista en esa rama o carpeta y vuelve a sincronizar |
+| Claude no muestra el skill del plugin | Se agregó el marketplace pero no se instaló el plugin, o la sesión es anterior a la instalación | Instala `vhc-inversiones-acciones` desde el catálogo e inicia una sesión nueva |
 | ChatGPT Desktop no muestra el plugin | Se agregó el repositorio pero no se instaló su entrada, o el catálogo está en caché | Reinicia la aplicación, abre **Explorar directorio → VHC Inversiones** e instala el plugin con `+` |
 | ChatGPT web no activa el skill | No está cargado o la solicitud no coincide claramente con su propósito | Comprueba **Complementos → Habilidades**, abre un chat nuevo y selecciónalo con `@vhc-inversiones-acciones` |
 | Codex no activa el skill | No está instalado o no se abrió una sesión nueva | Comprueba la ubicación, inicia una sesión nueva y usa `$vhc-inversiones-acciones` |

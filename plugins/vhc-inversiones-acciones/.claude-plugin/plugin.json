@@ -1,0 +1,19 @@
+{
+  "name": "vhc-inversiones-acciones",
+  "displayName": "VHC Inversiones — Acciones",
+  "version": "1.1.6",
+  "description": "Screening cuantitativo de acciones y Deep Dive de reportes InvestingPro.",
+  "author": {
+    "name": "VHC Inversiones",
+    "url": "https://github.com/corteshvictor"
+  },
+  "homepage": "https://github.com/corteshvictor/vhc-inversiones-acciones",
+  "repository": "https://github.com/corteshvictor/vhc-inversiones-acciones",
+  "license": "Apache-2.0",
+  "keywords": [
+    "acciones",
+    "screening",
+    "investingpro",
+    "inversiones"
+  ]
+}

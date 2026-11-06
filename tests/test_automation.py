@@ -41,6 +41,15 @@ EVALUATION_SURFACES = {
         {"$vhc-inversiones-acciones"},
         {"C09a", "C09b"},
     ),
+    "S10": (
+        "Claude",
+        "Code",
+        "marketplace",
+        {"/vhc-inversiones-acciones:vhc-inversiones-acciones"},
+        {"C09a", "C09b"},
+    ),
+    "S11": ("Claude", "Chat", "marketplace", {"/vhc"}, {"C09a", "C09b"}),
+    "S12": ("Claude", "Cowork", "marketplace", {"/vhc"}, {"C09a", "C09b"}),
 }
 
 EVALUATION_CASES = {
@@ -125,15 +134,6 @@ def test_release_please_starts_from_the_declared_commit(project_root):
     manifest = json.loads(
         (project_root / ".release-please-manifest.json").read_text(encoding="utf-8")
     )
-    plugin = json.loads(
-        (
-            project_root
-            / "plugins"
-            / "vhc-inversiones-acciones"
-            / ".codex-plugin"
-            / "plugin.json"
-        ).read_text(encoding="utf-8")
-    )
 
     # bootstrap-sha tells release-please to look at nothing older than the SHA
     # it names, and is read only while no release exists at all. This repository
@@ -142,8 +142,18 @@ def test_release_please_starts_from_the_declared_commit(project_root):
     # is still a valid 40-character string, and it silently drops every commit
     # before it out of every changelog it writes.
     assert "bootstrap-sha" not in config
-    assert config["packages"]["."]["extra-files"][0]["jsonpath"] == "$.version"
-    assert manifest["."] == plugin["version"]
+
+    # A plugin manifest missing from this list keeps its old version forever,
+    # and an installer pinned to that version never sees another release.
+    extra_files = config["packages"]["."]["extra-files"]
+    assert {entry["path"] for entry in extra_files} == {
+        f"plugins/vhc-inversiones-acciones/{platform}/plugin.json"
+        for platform in (".codex-plugin", ".claude-plugin")
+    }
+    for entry in extra_files:
+        assert entry["jsonpath"] == "$.version"
+        plugin = json.loads((project_root / entry["path"]).read_text(encoding="utf-8"))
+        assert manifest["."] == plugin["version"], entry["path"]
 
 
 def test_the_release_pull_request_survives_its_own_ci(project_root):
