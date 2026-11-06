@@ -64,6 +64,11 @@
           "type": "json",
           "path": "plugins/vhc-inversiones-acciones/.codex-plugin/plugin.json",
           "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "plugins/vhc-inversiones-acciones/.claude-plugin/plugin.json",
+          "jsonpath": "$.version"
         }
       ]
     }

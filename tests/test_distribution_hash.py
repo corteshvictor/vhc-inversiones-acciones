@@ -98,11 +98,12 @@ def plugin(project_root, tmp_path):
     return tree
 
 
-def test_a_plugin_tree_covers_its_manifest_too(plugin):
-    """Two layouts exist and they are not the same package: the plugin adds a
-    manifest that decides which version an installer believes it has."""
+@pytest.mark.parametrize("platform", [".codex-plugin", ".claude-plugin"])
+def test_a_plugin_tree_covers_its_manifests_too(plugin, platform):
+    """Two layouts exist and they are not the same package: the plugin adds the
+    manifests that decide which version an installer believes it has."""
     digest, _ = tree_digest(plugin, "plugin")
-    manifest = plugin / ".codex-plugin" / "plugin.json"
+    manifest = plugin / platform / "plugin.json"
     manifest.write_text(manifest.read_text(encoding="utf-8") + "\n", encoding="utf-8")
 
     assert tree_digest(plugin, "plugin")[0] != digest
@@ -160,12 +161,13 @@ def test_an_alias_beside_a_declared_file_counts_as_an_extra(installed):
     assert digest == before, "an alias is an extra entry, not different content"
 
 
-def test_a_linked_plugin_manifest_is_refused_too(plugin, tmp_path):
+@pytest.mark.parametrize("platform", [".codex-plugin", ".claude-plugin"])
+def test_a_linked_plugin_manifest_is_refused_too(plugin, tmp_path, platform):
     """The manifest decides which version an installer believes it has, so it
     is exactly the file worth pointing somewhere else."""
     outside = tmp_path / "plugin.json"
     outside.write_text("{}", encoding="utf-8")
-    manifest = plugin / ".codex-plugin" / "plugin.json"
+    manifest = plugin / platform / "plugin.json"
     manifest.unlink()
     manifest.symlink_to(outside)
 

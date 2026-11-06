@@ -25,12 +25,15 @@ DEVELOPMENT_ONLY = "not packaged: this identifies a package, it does not ship in
 LISTED_EXTRAS = 20
 
 # What a tree is expected to contain depends on which one it is. A skill folder
-# holds the package files at its root; a plugin wraps that folder and adds its
-# own manifest, and pointing at the wrong one is easy enough that the error has
-# to name which layout was assumed.
+# holds the package files at its root; a plugin wraps that folder and adds one
+# manifest per platform, and pointing at the wrong one is easy enough that the
+# error has to name which layout was assumed.
 TREES = {
     "skill": PACKAGE_FILES,
-    "plugin": (Path(".codex-plugin") / "plugin.json",)
+    "plugin": (
+        Path(".codex-plugin") / "plugin.json",
+        Path(".claude-plugin") / "plugin.json",
+    )
     + tuple(Path("skills") / PACKAGE_NAME / name for name in PACKAGE_FILES),
 }
 

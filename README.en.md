@@ -36,7 +36,7 @@ Picking the skill before you write depends on where you are. In every case you t
 
 That table comes from testing the macOS apps. Outside them, the documented forms apply: `@vhc-inversiones-acciones` on the ChatGPT website and `$vhc-inversiones-acciones` in the Codex CLI. **Naming the skill in the message works everywhere the skill is installed and enabled**, and it is the one route that survives an interface change.
 
-Claude Code — the **Code** tab — does not inherit the skills loaded under Customize: unzip the package into `~/.claude/skills` as well, or into `.claude/skills` inside a repository. That does not change the rule: picking the skill says which tool to run, never which language to write the files in.
+Claude Code — the **Code** tab — does not inherit the skills loaded under Customize: install it there as a plugin, or unzip the package into `~/.claude/skills` as well, or into `.claude/skills` inside a repository. That does not change the rule: picking the skill says which tool to run, never which language to write the files in.
 
 **The InvestingPro column names stay in English in both languages.** They are the same `Return on Invested Capital`, `EV / EBIT` and `Piotroski Score` you configured in the screener, and translating them would break the trail between what you asked for there and what you read in the workbook. What does get translated is everything the method computes — the bucket, the score, the verdicts, the signal counts and the alerts — along with the whole guide sheet. What each indicator measures lives in the dashboard glossary, in both languages.
 
@@ -376,11 +376,44 @@ InvestingPro exports percentages as decimals: `0.478` means `47.8%`. The program
 Two distributions are built from the same sources:
 
 - [`vhc-inversiones-acciones.zip`](vhc-inversiones-acciones.zip) — for Claude, ChatGPT on the web, or a manual Codex install.
-- The marketplace in `.agents/plugins/marketplace.json` — for ChatGPT Desktop and Codex as a plugin.
+- The marketplaces in the repository, to install it as a plugin — `.agents/plugins/marketplace.json` for ChatGPT Desktop and Codex, `.claude-plugin/marketplace.json` for Claude.
 
 Install it only if you trust its origin: it carries instructions, Python code, declared dependencies and brand assets.
 
 **Claude.** Settings → Capabilities → enable *Cloud code execution and file creation*; enabling *Allow network egress* lets Claude install the declared dependencies when they are missing. Then Customize → Skills → Add → Upload a skill, and drop the ZIP in. Team and Enterprise accounts may need an administrator to enable these capabilities first.
+
+**Claude, as a plugin.** The plugin saves uploading the package again for every version. There are two routes, and what you install through one does not appear in the other: the first stays on your account, the second only on that machine. It requires a paid plan, and adding the marketplace only registers the catalog — the plugin still has to be installed separately.
+
+If you uploaded the ZIP before, turn that skill off so you do not have two copies of it.
+
+*From Customize, for Chat, Cowork and Claude Code:*
+
+1. Open **Customize → Plugins → Add → Add marketplace**.
+2. In the URL field, type `corteshvictor/vhc-inversiones-acciones`.
+3. Leave **Sync automatically** on if you want changes without doing anything. If you turn it off, use **Check for updates** on the marketplace.
+4. Confirm the form and install **VHC Inversiones — Acciones**.
+5. Check that code execution is enabled, as with the ZIP, and start a new conversation before testing an XLSX or a PDF.
+
+Claude Code downloads it as a synced plugin when you start a session on the same account, from version 2.1.273. Syncing follows the GitHub repository: the documentation does not say whether a change on `main` arrives before a version is published.
+
+*From Claude Code:*
+
+```bash
+claude plugin marketplace add corteshvictor/vhc-inversiones-acciones
+claude plugin install vhc-inversiones-acciones@vhc-inversiones
+```
+
+The skill appears as `/vhc-inversiones-acciones:vhc-inversiones-acciones`, and naming it in the message works too.
+
+Here new versions arrive with each release, because Claude Code stays on the version in `plugin.json` until it changes. **Auto-update is off by default** for third-party marketplaces: turn it on under `/plugin` → **Marketplaces** → **Enable auto-update**, or update by hand:
+
+```bash
+claude plugin update vhc-inversiones-acciones@vhc-inversiones
+```
+
+To try a local copy before publishing, pass the repository root folder instead of `corteshvictor/vhc-inversiones-acciones`. Claude Code reads it in place, without copying it, so your edits apply on the next session with no version change.
+
+Both routes are **documented installation, behavior not certified**: the evaluation matrix has not been run on them yet. The skill still needs Python and its dependencies wherever it runs. If you cannot get it to run this way, use the ZIP.
 
 **ChatGPT on the web.** Plugins → Skills → **+** → Upload from your computer, then select the ZIP. Type `@vhc-inversiones-acciones` in a chat to invoke it explicitly. Availability depends on your plan and workspace permissions.
 
@@ -421,7 +454,7 @@ unzip vhc-inversiones-acciones.zip -d ~/.agents/skills
 
 `SKILL.md` must end up at `~/.agents/skills/vhc-inversiones-acciones/SKILL.md`. To enable it in a single repository, unzip into `.agents/skills` inside that project instead. Then start a new conversation, or ask for `$vhc-inversiones-acciones` explicitly.
 
-**Claude Code.** The **Code** tab does not inherit the skills loaded under Customize:
+**Claude Code.** The **Code** tab does not inherit the skills loaded under Customize. Install it there as a plugin, as described above, or unzip the package:
 
 ```bash
 mkdir -p ~/.claude/skills
@@ -562,6 +595,8 @@ Coverage over `scripts/` must stay at 100 %.
 | `sectores_excluidos.csv` missing | The script was copied without the rest of the skill | Restore the complete structure; the run stops on purpose |
 | No files are produced | The agent has no code execution or file writing enabled | Enable those capabilities, or run it locally |
 | Claude does not activate the skill | It is disabled, or the request is ambiguous | Enable it under **Customize → Skills** and name it explicitly in the prompt |
+| Claude does not accept the repository as a marketplace | The reference you added does not contain `.claude-plugin/marketplace.json` | Check that the file exists on that branch or folder, then sync again |
+| Claude does not show the plugin's skill | The marketplace was added but the plugin was never installed, or the session predates the install | Install `vhc-inversiones-acciones` from the catalog and start a new session |
 | ChatGPT Desktop does not show the plugin | The repository was added but its entry was never installed, or the catalog is cached | Restart the app, open **Explore directory → VHC Inversiones** and install the plugin with `+` |
 | ChatGPT on the web does not activate it | It is not loaded, or the request does not clearly match its purpose | Check **Plugins → Skills**, open a new chat and select it with `@vhc-inversiones-acciones` |
 | Codex does not activate it | It is not installed, or the session predates the install | Check the location, start a new session and use `$vhc-inversiones-acciones` |

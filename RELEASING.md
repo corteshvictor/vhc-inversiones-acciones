@@ -50,15 +50,17 @@ commit and writes no extra message for release-please to read.
 
 | | What it is | Where it lives | When it moves |
 |---|---|---|---|
-| Distribution | What a user installs | `plugin.json` and `.release-please-manifest.json` | Every release, automatically |
+| Distribution | What a user installs | Both `plugin.json` files and `.release-please-manifest.json` | Every release, automatically |
 | Method | The thresholds, lenses, gates and score | `SCREENING_VERSION` in `constants.py` | Only when the method changes. By hand, on purpose |
 
 `SCREENING_VERSION` is printed on every report so two runs months apart stay
 comparable. Raising it without changing the method breaks that promise. It has
 not moved since the first commit.
 
-A test compares `plugin.json` against `.release-please-manifest.json`, so the
-two cannot drift apart.
+A test compares each `plugin.json`, Codex and Claude, against
+`.release-please-manifest.json`, so they cannot drift apart. It matters most for
+Claude: the version pins what an installer gets, so a stale manifest would keep
+users on the old release without any error.
 
 ## The one rule the automation depends on
 

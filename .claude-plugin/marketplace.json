@@ -1,0 +1,16 @@
+{
+  "name": "vhc-inversiones",
+  "description": "Plugins de VHC Inversiones para analizar acciones.",
+  "owner": {
+    "name": "VHC Inversiones",
+    "url": "https://github.com/corteshvictor"
+  },
+  "plugins": [
+    {
+      "name": "vhc-inversiones-acciones",
+      "source": "./plugins/vhc-inversiones-acciones",
+      "description": "Screening cuantitativo de acciones y Deep Dive de reportes InvestingPro.",
+      "category": "productivity"
+    }
+  ]
+}

@@ -60,8 +60,8 @@ def test_main_allows_choosing_the_output(project_root, tmp_path, capsys):
 
     assert result == output
     assert output.is_file()
-    assert (tmp_path / build_skill.PLUGIN_MANIFEST).is_file()
-    assert (tmp_path / build_skill.MARKETPLACE_MANIFEST).is_file()
+    for relative_path in build_skill.DISTRIBUTION_MANIFESTS:
+        assert (tmp_path / relative_path).is_file()
     assert "Paquete generado" in capsys.readouterr().out
 
 

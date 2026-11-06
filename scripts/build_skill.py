@@ -36,6 +36,14 @@ PLUGIN_RELATIVE_ROOT = Path("plugins") / PACKAGE_NAME
 PLUGIN_SKILL_RELATIVE_ROOT = PLUGIN_RELATIVE_ROOT / "skills" / PACKAGE_NAME
 PLUGIN_MANIFEST = PLUGIN_RELATIVE_ROOT / ".codex-plugin" / "plugin.json"
 MARKETPLACE_MANIFEST = Path(".agents/plugins/marketplace.json")
+CLAUDE_PLUGIN_MANIFEST = PLUGIN_RELATIVE_ROOT / ".claude-plugin" / "plugin.json"
+CLAUDE_MARKETPLACE_MANIFEST = Path(".claude-plugin/marketplace.json")
+DISTRIBUTION_MANIFESTS = (
+    PLUGIN_MANIFEST,
+    MARKETPLACE_MANIFEST,
+    CLAUDE_PLUGIN_MANIFEST,
+    CLAUDE_MARKETPLACE_MANIFEST,
+)
 
 
 def _validate_required_files(root_path: Path, paths: tuple[Path, ...]) -> None:
@@ -83,10 +91,9 @@ def build_plugin(
     output_root: str | Path,
     root: str | Path = PROJECT_ROOT,
 ) -> Path:
-    """Builds the plugin and its marketplace from the canonical sources."""
+    """Builds the plugin and its marketplaces from the canonical sources."""
     root_path = Path(root)
-    required = PACKAGE_FILES + (PLUGIN_MANIFEST, MARKETPLACE_MANIFEST)
-    _validate_required_files(root_path, required)
+    _validate_required_files(root_path, PACKAGE_FILES + DISTRIBUTION_MANIFESTS)
 
     output_root_path = Path(output_root)
     plugin_root = output_root_path / PLUGIN_RELATIVE_ROOT
@@ -94,12 +101,10 @@ def build_plugin(
 
     for relative_path in PACKAGE_FILES:
         _copy_distribution_file(root_path / relative_path, skill_root / relative_path)
-    _copy_distribution_file(
-        root_path / PLUGIN_MANIFEST, output_root_path / PLUGIN_MANIFEST
-    )
-    _copy_distribution_file(
-        root_path / MARKETPLACE_MANIFEST, output_root_path / MARKETPLACE_MANIFEST
-    )
+    for relative_path in DISTRIBUTION_MANIFESTS:
+        _copy_distribution_file(
+            root_path / relative_path, output_root_path / relative_path
+        )
     return plugin_root
 
 
@@ -114,7 +119,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--plugin-output",
-        help="Raíz donde se construyen plugins/ y .agents/",
+        help="Raíz donde se construyen plugins/, .agents/ y .claude-plugin/",
     )
     return parser
 

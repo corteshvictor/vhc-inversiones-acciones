@@ -1,4 +1,4 @@
-"""Plugin distribution contract for ChatGPT and Codex."""
+"""Plugin distribution contract for ChatGPT, Codex and Claude."""
 
 import json
 from pathlib import Path
@@ -53,6 +53,37 @@ def test_marketplace_points_to_the_repository_plugin(project_root):
     ]
 
 
+def test_claude_manifest_declares_the_plugin_and_the_released_version(project_root):
+    """The version pins what an installer gets, so one left behind would keep
+    every Claude user on an old release with no error anywhere."""
+    manifest = _read_json(project_root / build_skill.CLAUDE_PLUGIN_MANIFEST)
+    released = _read_json(project_root / ".release-please-manifest.json")
+    codex = _read_json(project_root / build_skill.PLUGIN_MANIFEST)
+
+    assert manifest["name"] == build_skill.PACKAGE_NAME
+    assert manifest["displayName"] == codex["interface"]["displayName"]
+    assert manifest["version"] == released["."]
+    assert manifest["description"] == codex["description"]
+    assert manifest["license"] == codex["license"]
+    assert "mcpServers" not in manifest
+    assert "hooks" not in manifest
+
+
+def test_claude_marketplace_points_to_the_repository_plugin(project_root):
+    """Claude reads its own catalog, in its own format: the source is a plain
+    relative path and the owner is required."""
+    marketplace = _read_json(project_root / build_skill.CLAUDE_MARKETPLACE_MANIFEST)
+    entry = marketplace["plugins"][0]
+
+    assert marketplace["name"] == "vhc-inversiones"
+    assert marketplace["owner"]["name"] == "VHC Inversiones"
+    assert [plugin["name"] for plugin in marketplace["plugins"]] == [
+        build_skill.PACKAGE_NAME
+    ]
+    assert entry["source"] == f"./{build_skill.PLUGIN_RELATIVE_ROOT.as_posix()}"
+    assert (project_root / entry["source"] / "skills").is_dir()
+
+
 def test_plugin_skill_matches_the_canonical_sources(project_root):
     skill_root = project_root / build_skill.PLUGIN_SKILL_RELATIVE_ROOT
     actual_files = {
@@ -74,12 +105,10 @@ def test_builder_reproduces_a_complete_marketplace(project_root, tmp_path):
     skill_root = tmp_path / build_skill.PLUGIN_SKILL_RELATIVE_ROOT
 
     assert plugin_root == tmp_path / build_skill.PLUGIN_RELATIVE_ROOT
-    assert (tmp_path / build_skill.PLUGIN_MANIFEST).read_bytes() == (
-        project_root / build_skill.PLUGIN_MANIFEST
-    ).read_bytes()
-    assert (tmp_path / build_skill.MARKETPLACE_MANIFEST).read_bytes() == (
-        project_root / build_skill.MARKETPLACE_MANIFEST
-    ).read_bytes()
+    for relative_path in build_skill.DISTRIBUTION_MANIFESTS:
+        assert (tmp_path / relative_path).read_bytes() == (
+            project_root / relative_path
+        ).read_bytes()
     for relative_path in build_skill.PACKAGE_FILES:
         assert (skill_root / relative_path).read_bytes() == (
             project_root / relative_path
