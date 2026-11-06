@@ -20,6 +20,13 @@ threshold, a lens, a gate or the score itself changes.
 
 <!-- release-please will insert released versions below this line. -->
 
+## [1.2.0](https://github.com/corteshvictor/vhc-inversiones-acciones/compare/v1.1.6...v1.2.0) (2026-11-06)
+
+
+### Features
+
+* **plugin:** add Claude marketplace distribution ([0e2795a](https://github.com/corteshvictor/vhc-inversiones-acciones/commit/0e2795a404ebe2b03c9ed3428c380e4a2954ebac))
+
 ## [1.1.6](https://github.com/corteshvictor/vhc-inversiones-acciones/compare/v1.1.5...v1.1.6) (2026-11-06)
 
 
