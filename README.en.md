@@ -137,7 +137,9 @@ them. Rounded down, the companies in that range land in no slice at all, and
 
 **Step by step.** One number moves, and the tool works it out for you:
 
-1. Export **with no filters**. The 1,000 largest come out.
+1. Preserve the user's criteria and columns. To download the 1,000 largest
+   companies, raise or remove any restrictive upper limit on
+   `Market Cap (Adjusted)` and sort from largest to smallest.
 2. Join what you have:
 
 ```bash

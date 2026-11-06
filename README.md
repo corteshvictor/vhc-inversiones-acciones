@@ -253,7 +253,9 @@ ninguna tanda y **nada en el archivo delata su ausencia**.
 
 **Paso a paso.** Solo se toca un número, y el propio programa lo calcula:
 
-1. Exporta **sin filtros**. Salen las 1.000 mayores.
+1. Conserva los criterios y columnas del usuario. Para descargar las 1.000
+   mayores, amplía o retira cualquier límite superior restrictivo de
+   `Market Cap (Adjusted)` y ordena de mayor a menor.
 2. Une lo descargado:
 
 ```bash
