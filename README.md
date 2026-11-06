@@ -220,6 +220,10 @@ No filtres por sector. El propio screening aparta financieras y utilities sin pe
 
 - Usa InvestingPro en **inglés**.
 - Agrega las columnas con el botón `+` y conserva exactamente sus nombres.
+- Para descargar y unificar por tandas, incluye obligatoriamente la columna
+  `Market Cap (Adjusted)` en todos los exports. Si falta,
+  `tools/merge_exports.py` se detiene: la necesita para ordenar las tandas,
+  comprobar su continuidad y calcular el siguiente límite del filtro.
 - En InvestingPro, ordena el screener por `Market Cap (Adjusted)` de mayor a
   menor antes de exportar. Es obligatorio.
 - Si aun así InvestingPro entrega alguna fila fuera de orden en el XLSX, no
@@ -319,7 +323,7 @@ que rara vez existe a esa escala— envejece mejor que el número.
 |---|---:|---|
 | Esenciales | 3 | El screening se detiene |
 | Núcleo | 17 | El screening se detiene antes de clasificar y no genera archivos |
-| Opcionales | 5 | El análisis se genera; se pierde contexto, ordenación o enlaces |
+| Opcionales para el clasificador | 5 | El análisis se genera; se pierde contexto, ordenación o enlaces. Para unificar por tandas, `Market Cap (Adjusted)` es obligatoria |
 
 ## De dónde viene el método
 
@@ -483,10 +487,14 @@ El tribunal suma cuatro posibles señales favorables y cuatro contrarias. Su ver
 
 Estas columnas enriquecen el resultado, pero no cambian la clasificación cuantitativa.
 
+`Market Cap (Adjusted)` es opcional únicamente para el clasificador. Para
+descargar y unificar por tandas es obligatoria en cada export, y el screener
+debe ordenarse por ella de mayor a menor antes de descargar.
+
 | Columna exacta | Qué mide | Uso en el informe |
 |---|---|---|
 | `Full Ticker` | El símbolo con su bolsa, por ejemplo `NASDAQGS:AAPL`. | Enlaza cada empresa del dashboard con su ficha de InvestingPro. Sin ella el informe funciona, pero los tickers no tendrán enlace. |
-| `Market Cap (Adjusted)` | El tamaño de la empresa por capitalización bursátil. | Se muestra en el Excel y ordena el Watchlist de mayor a menor capitalización. |
+| `Market Cap (Adjusted)` | El tamaño de la empresa por capitalización bursátil. | Obligatoria para descargar y unificar por tandas; opcional para el clasificador. Se muestra en el Excel y ordena el Watchlist de mayor a menor capitalización. |
 | `P/E Ratio` | La relación entre precio y utilidad. | Se muestra como contexto de valoración; no suma ni resta señales. |
 | `PEG Ratio Fwd` | El P/E ajustado por el crecimiento esperado. | Se muestra como contexto; no suma ni resta señales. |
 | `Beta (5 Year)` | La volatilidad frente al mercado durante cinco años. | Se muestra como contexto de riesgo; no suma ni resta señales. |

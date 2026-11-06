@@ -106,6 +106,10 @@ Do **not** filter by sector. The screening sets financials and utilities aside o
 Export rules:
 
 - Use the InvestingPro interface **in English**; the canonical column names are the ones it produces.
+- To download and merge batches, include the required `Market Cap (Adjusted)`
+  column in every export. If it is missing, `tools/merge_exports.py` stops:
+  it needs the column to order batches, check continuity and calculate the next
+  filter limit.
 - In InvestingPro, sort the screener by `Market Cap (Adjusted)` from largest to
   smallest before exporting. This is required.
 - If InvestingPro still delivers a row out of order in the XLSX, nothing
@@ -199,7 +203,7 @@ Columns:
 |---|---:|---|
 | Essential | 3 | The screening stops |
 | Core | 17 | The screening stops before classifying and writes no files |
-| Optional | 5 | The analysis runs; you lose context, ordering or links |
+| Optional for the classifier | 5 | The analysis runs; you lose context, ordering or links. `Market Cap (Adjusted)` is required to merge batches |
 
 The exact column names are listed in [`references/REFERENCE.md`](references/REFERENCE.md).
 
@@ -347,10 +351,14 @@ The gate adds up to four favorable signals and four against. Its net verdict:
 
 These enrich the output without changing the classification.
 
+`Market Cap (Adjusted)` is optional only for the classifier. To download and
+merge batches, it is required in every export, and the screener must be sorted
+by it from largest to smallest before downloading.
+
 | Exact column | What it measures | Use in the report |
 |---|---|---|
 | `Full Ticker` | The symbol with its exchange, such as `NASDAQGS:AAPL`. | Links every company in the dashboard to its InvestingPro page. Without it the report still works, but the tickers carry no links. |
-| `Market Cap (Adjusted)` | Company size by market capitalization. | Shown in the Excel file, and orders the dashboard Watchlist from largest to smallest. |
+| `Market Cap (Adjusted)` | Company size by market capitalization. | Required to download and merge batches; optional for the classifier. Shown in the Excel file, and orders the dashboard Watchlist from largest to smallest. |
 | `P/E Ratio` | Price against earnings. | Shown as valuation context; adds and subtracts nothing. |
 | `PEG Ratio Fwd` | P/E adjusted for expected growth. | Shown as context; adds and subtracts nothing. |
 | `Beta (5 Year)` | Volatility against the market over five years. | Shown as risk context; adds and subtracts nothing. |
