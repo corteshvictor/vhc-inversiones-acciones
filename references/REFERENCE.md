@@ -18,9 +18,16 @@ Cada quien organiza su screener como prefiere, así que el screening localiza lo
 - `Piotroski Score` · `Altman Z-Score` · `Beneish M-Score`
 - `Total Debt / Total Capital`
 
-**Recomendadas — no puntúan, pero enriquecen la salida:**
+**Obligatoria para descargar y unificar por tandas:** la columna
+`Market Cap (Adjusted)` debe estar incluida en todos los exports. Antes de
+descargar, ordenar el screener por ella de mayor a menor. El unificador
+`tools/merge_exports.py` se detiene si falta: la necesita para ordenar las
+tandas, comprobar su continuidad y calcular el siguiente límite del filtro.
+Este requisito del proceso por tandas no cambia los requisitos del clasificador.
+
+**Opcionales para el clasificador — no puntúan, pero enriquecen la salida:**
 - `Full Ticker` — sin ella el informe sale completo, solo que sin enlaces: es el dato que convierte cada empresa del dashboard en un acceso directo a su ficha de InvestingPro. El screening lo avisa al inicio cuando falta.
-- `Market Cap (Adjusted)` — aparece como columna en el Excel y, en el dashboard, ordena el Watchlist de mayor a menor capitalización. El Excel no usa ese orden: sus filas van por categoría, puntaje y ticker.
+- `Market Cap (Adjusted)` — opcional para el clasificador y obligatoria para descargar y unificar por tandas. Aparece como columna en el Excel y, en el dashboard, ordena el Watchlist de mayor a menor capitalización. El Excel no usa ese orden: sus filas van por categoría, puntaje y ticker.
 - `P/E Ratio` · `PEG Ratio Fwd` · `Beta (5 Year)` — contexto adicional en el Excel, nada más.
 
 **Sobrantes inofensivas — el screening las descarta en silencio:**
